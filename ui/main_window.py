@@ -15,6 +15,11 @@ class MainWindow(QMainWindow):
         
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
+
+
+
+        theme_button = QPushButton()
+        theme_button
         
         layout = QVBoxLayout(self.central_widget)
 
