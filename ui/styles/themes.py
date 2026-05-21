@@ -5,7 +5,7 @@
 # Para mudar uma cor, edite theme_colors.py.
 # ─────────────────────────────────────────────
 
-from theme_colors import THEMES
+from .theme_colors import THEMES
 
 # Placeholders usam a sintaxe {token} do str.format_map()
 _BASE_THEME = """
