@@ -17,7 +17,6 @@ PyFlowDownloader e um gerenciador de downloads desktop feito em Python. O sistem
 - Instale o `ffmpeg` quando for baixar MP3, `1080p`, `best` ou qualquer formato que use video e audio separados.
 - No Windows, o sistema procura o `ffmpeg` automaticamente em `C:/ffmpeg/bin/ffmpeg.exe`.
 - Se o `ffmpeg` estiver em outro lugar, adicione a pasta `bin` ao `PATH` ou configure uma das variaveis `FFMPEG_BINARY`, `FFMPEG_PATH` ou `FFMPEG_HOME`.
-- Para videos que pedem login ou bloqueiam bot, use cookies do navegador no `yt-dlp`; essa configuracao ainda nao esta exposta na interface.
 
 ## Requisitos Funcionais Atuais
 
