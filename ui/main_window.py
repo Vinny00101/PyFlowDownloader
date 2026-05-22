@@ -1,145 +1,106 @@
-from pathlib import Path
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtWidgets import (
-    QComboBox,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QMainWindow,
-    QPushButton,
-    QScrollArea,
-    QTabWidget,
-    QTableWidget,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtCore import Qt, Slot
+from PySide6.QtWidgets import QMainWindow
 
-# Importação do sistema de temas
+from core.thread_manager import ThreadManager
+from ui.controllers import DownloadController, HistoryController, ShutdownController
+from ui.layouts import MainView
 from ui.styles.themes import get_theme
 
+
 class MainWindow(QMainWindow):
+    """Janela principal: compoe widgets e conecta fluxos da UI."""
+
     def __init__(
         self,
+        manager: ThreadManager = None,
         settings=None,
-        settings_path: Path = None,
-        history=None,
-        signals=None,
-        manager=None,
+        settings_path=None,  # Alerta de não uso
+        history=None,        # Alerta de não uso
+        signals=None,        # Alerta de não uso
     ) -> None:
         super().__init__()
+        self._manager = manager
         self._settings = settings
         self._settings_path = settings_path
         self._history = history
         self._signals = signals
-        self._manager = manager
-        self._row_widgets = {}
 
         self.setWindowTitle("PyFlowDownloader")
         self.setMinimumSize(960, 700)
         self.resize(1024, 750)
 
-        self._build_ui()
-        self._apply_theme()
+        self.view = MainView.build()
+        self.setCentralWidget(self.view.root)
 
-    def _build_ui(self) -> None:
-        central = QWidget()
-        self.setCentralWidget(central)
-        root = QVBoxLayout(central)
-        root.setSpacing(16)
-        root.setContentsMargins(20, 20, 20, 20)
+        self._download_controller = DownloadController(
+            manager=self._manager,
+            logger=self.view.log_widget,
+            parent_widget=self,
+        )
+        self._history_controller = HistoryController(
+            manager=self._manager,
+            history_panel=self.view.history_panel,
+        )
+        self._shutdown_controller = ShutdownController(
+            manager=self._manager,
+            queue_panel=self.view.queue_panel,
+        )
 
-        # Header Section
-        header = QHBoxLayout()
-        title_box = QVBoxLayout()
-        title = QLabel("PyFlowDownloader")
-        title.setObjectName("titleLabel")
-        subtitle = QLabel("Downloads simultâneos · Fila · Histórico")
-        subtitle.setObjectName("subtitleLabel")
-        title_box.addWidget(title)
-        title_box.addWidget(subtitle)
-        header.addLayout(title_box)
-        header.addStretch()
+        colors = get_theme("dark")
+        self.setStyleSheet(colors)
+        self._connect_signals()
+        self.view.queue_panel.start_polling(self._manager)
 
-        self.settings_btn = QPushButton("Configurações")
-        self.settings_btn.setObjectName("secondaryBtn")
-        header.addWidget(self.settings_btn)
-        root.addLayout(header)
+    def _connect_signals(self) -> None:
+        self.view.input_bar.download_requested.connect(self._on_download_requested)
+        self.view.queue_panel.cancel_requested.connect(
+            self._download_controller.confirm_cancel
+        )
+        self.view.queue_panel.status_changed.connect(self._update_status_bar)
+        self.view.history_panel.clear_requested.connect(
+            self._history_controller.clear_history
+        )
+        self.view.tabs.currentChanged.connect(self._on_tab_changed)
 
-        # URL Input Section
-        url_row = QHBoxLayout()
-        self.url_input = QLineEdit()
-        self.url_input.setPlaceholderText("Cole a URL do YouTube aqui...")
-        url_row.addWidget(self.url_input, stretch=1)
+    @Slot(str, str, bool)
+    def _on_download_requested(
+        self,
+        url: str,
+        format_spec: str,
+        is_audio: bool,
+    ) -> None:
+        self._download_controller.add_download(url, format_spec, is_audio)
+        self.view.tabs.setCurrentIndex(0)
 
-        self.format_combo = QComboBox()
-        self.format_combo.addItems(["mp4", "mp3"])
-        self.format_combo.setFixedWidth(80)
-        url_row.addWidget(self.format_combo)
+    def _on_tab_changed(self, index: int) -> None:
+        if index == self.view.history_tab_idx:
+            self._history_controller.refresh()
 
-        self.quality_combo = QComboBox()
-        self.quality_combo.addItems(["144p", "360p", "720p", "1080p", "best"])
-        self.quality_combo.setFixedWidth(90)
-        url_row.addWidget(self.quality_combo)
+    @Slot(int, int, int)
+    def _update_status_bar(self, total: int, active: int, queued: int) -> None:
+        self.view.status_bar_label.setText(
+            f"{total} downloads · {active} ativos · {queued} na fila"
+        )
 
-        self.add_btn = QPushButton("Adicionar")
-        url_row.addWidget(self.add_btn)
-        root.addLayout(url_row)
+    def _disconnect_signals(self) -> None:
+        for signal, slot in (
+            (self.view.input_bar.download_requested, self._on_download_requested),
+            (self.view.queue_panel.cancel_requested, self._download_controller.confirm_cancel),
+            (self.view.queue_panel.status_changed, self._update_status_bar),
+            (self.view.history_panel.clear_requested, self._history_controller.clear_history),
+            (self.view.tabs.currentChanged, self._on_tab_changed),
+        ):
+            try:
+                signal.disconnect(slot)
+            except TypeError:
+                pass
 
-        # Main Content Section (Tabs)
-        self.tabs = QTabWidget()
+    def closeEvent(self, event):
+        self._disconnect_signals()
+        self._shutdown_controller.shutdown()
+        super().closeEvent(event)
 
-        # Tab: Fila
-        queue_tab = QWidget()
-        queue_layout = QVBoxLayout(queue_tab)
-        self.queue_scroll = QScrollArea()
-        self.queue_scroll.setWidgetResizable(True)
-        self.queue_container = QWidget()
-        self.queue_layout = QVBoxLayout(self.queue_container)
-        self.queue_layout.addStretch()
-        self.queue_scroll.setWidget(self.queue_container)
-        queue_layout.addWidget(self.queue_scroll)
-        self.tabs.addTab(queue_tab, "Fila de Downloads")
-
-        # Tab: Histórico
-        history_tab = QWidget()
-        history_layout = QVBoxLayout(history_tab)
-        hist_btn_row = QHBoxLayout()
-        self.export_btn = QPushButton("Exportar CSV")
-        self.export_btn.setObjectName("secondaryBtn")
-        self.clear_hist_btn = QPushButton("Limpar histórico")
-        self.clear_hist_btn.setObjectName("dangerBtn")
-        hist_btn_row.addWidget(self.export_btn)
-        hist_btn_row.addWidget(self.clear_hist_btn)
-        hist_btn_row.addStretch()
-        history_layout.addLayout(hist_btn_row)
-
-        self.history_table = QTableWidget()
-        self.history_table.setColumnCount(5)
-        self.history_table.setHorizontalHeaderLabels(["Título", "URL", "Data", "Status", "Arquivo"])
-        self.history_table.horizontalHeader().setStretchLastSection(True)
-        history_layout.addWidget(self.history_table)
-        self.tabs.addTab(history_tab, "Histórico")
-
-        root.addWidget(self.tabs, stretch=1)
-
-        # Logs & Status
-        log_label = QLabel("Logs")
-        log_label.setStyleSheet("font-weight: 600; color: #7aa2f7;")
-        root.addWidget(log_label)
-        
-        self.log_panel = QWidget() # Placeholder para o LogPanel customizado
-        self.log_panel.setMinimumHeight(120)
-        root.addWidget(self.log_panel)
-
-        self.status_bar_label = QLabel("Pronto")
-        self.status_bar_label.setStyleSheet("color: #565f89; font-size: 11px;")
-        root.addWidget(self.status_bar_label)
-
-    def _apply_theme(self) -> None:
-        theme_name = self._settings.theme if self._settings else "dark"
-        self.setStyleSheet(get_theme(theme_name))
-
-    def toggle_fullscreen(self):
+    def toggle_fullscreen(self) -> None:
         if self.isFullScreen():
             self.showNormal()
         else:
@@ -151,4 +112,3 @@ class MainWindow(QMainWindow):
             event_input.accept()
         else:
             super().keyPressEvent(event_input)
-    

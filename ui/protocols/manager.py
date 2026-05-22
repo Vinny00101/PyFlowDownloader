@@ -1,0 +1,16 @@
+from __future__ import annotations
+
+from typing import Optional, Protocol, runtime_checkable
+
+from ui.protocols.tasks import HistoryTaskProtocol, QueueTaskProtocol
+
+
+@runtime_checkable
+class DownloadManagerProtocol(Protocol):
+    """Interface que o ThreadManager deve satisfazer para a UI."""
+
+    def submit(self, url: str, format_spec: str = ..., audio: bool = ...) -> int: ...
+    def cancel(self, task_id: int) -> bool: ...
+    def get_task(self, task_id: int) -> Optional[HistoryTaskProtocol]: ...
+    def list_tasks(self) -> list[QueueTaskProtocol]: ...
+    def clear_terminal_tasks(self) -> None: ...

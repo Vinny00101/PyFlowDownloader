@@ -1,15 +1,36 @@
 import sys
+from pathlib import Path
+
 from PySide6.QtWidgets import QApplication
+
+from core.thread_manager import ThreadManager
 from ui.main_window import MainWindow
 
 
-def main() -> QApplication: 
+def _videos_dir() -> Path:
+    home = Path.home()
+    for name in ("Videos", "Vídeos", "My Videos", "Meus Vídeos"):
+        p = home / name
+        if p.exists():
+            return p
+    return home / "Videos"
+
+
+def main():
     app = QApplication(sys.argv)
-    window = MainWindow()
+
+    output_dir = _videos_dir() / "PyFlowDownloader"
+    output_dir.mkdir(exist_ok=True)
+
+    manager = ThreadManager(max_workers=3, output_dir=str(output_dir))
+
+    window = MainWindow(manager=manager)
     window.show()
 
-    return app.exec()
-    
+    exit_code = app.exec()
+    manager.shutdown(wait=False)
+    sys.exit(exit_code)
+
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

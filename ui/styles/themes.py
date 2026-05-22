@@ -140,6 +140,29 @@ QScrollBar::handle:vertical {{
     border-radius: 4px;
     min-height: 20px;
 }}
+
+DownloadCard#downloadCard {{
+    background-color: #1e2030;
+    border: 1px solid #313244;
+    border-radius: 8px;
+}}
+QLabel#cardTitle {{
+    color: #c0caf5; font-weight: 600; font-size: 13px;
+}}
+QLabel#cardStatus, QLabel#cardSpeed, QLabel#cardEta {{
+    color: #565f89; font-size: 11px;
+}}
+QTextEdit#logPanel {{
+    background-color: #1a1b26;
+    color: #565f89;
+    border: 1px solid #313244;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+}}
+QLabel#statusBar {{
+    color: #565f89; font-size: 11px;
+}}
 """
 
 
