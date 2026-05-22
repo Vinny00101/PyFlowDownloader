@@ -1,4 +1,3 @@
-import shutil
 from urllib.parse import urlparse
 
 from PySide6.QtCore import Signal
@@ -10,6 +9,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QWidget,
 )
+
+from core.ffmpeg import find_ffmpeg
 
 class InputBar(QWidget):
     """Barra com campo de URL, seletores de formato/qualidade e botao Adicionar.
@@ -64,12 +65,14 @@ class InputBar(QWidget):
         format_spec = self._build_format_spec(fmt, quality)
         is_audio = fmt == "mp3"
 
-        if is_audio and not self._ffmpeg_available():
+        needs_ffmpeg = is_audio or "+" in format_spec
+        if needs_ffmpeg and not self._ffmpeg_available():
             QMessageBox.warning(
                 self,
                 "ffmpeg não encontrado",
-                "Para converter para MP3 é necessário instalar o ffmpeg "
-                "e adicioná-lo ao PATH do sistema.\n\n"
+                "Para baixar em alta qualidade ou converter para MP3 é necessário instalar o ffmpeg "
+                "faça a extração no diretorio 'C:/ffmpeg' "
+                "e adicioná-lo ao PATH do sistema o diretorio 'C:/ffmpeg/bin' .\n\n"
                 "Baixe em: https://ffmpeg.org/download.html",
             )
             return
@@ -91,11 +94,10 @@ class InputBar(QWidget):
         if fmt == "mp3":
             return "bestaudio/best"
         if quality == "best":
-            return "best"
+            return "bestvideo+bestaudio/best"
         height = quality.replace("p", "")
-        prefix = "worst" if height == "144" else "best"
-        return f"{prefix}[height<={height}]/{prefix}"
+        return f"bestvideo[height<={height}]+bestaudio/best[height<={height}]/best"
 
     @staticmethod
     def _ffmpeg_available() -> bool:
-        return shutil.which("ffmpeg") is not None
+        return find_ffmpeg() is not None

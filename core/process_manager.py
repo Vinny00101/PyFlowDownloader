@@ -8,6 +8,8 @@ O restante do sistema não precisa conhecer os detalhes de configuração do
 from pathlib import Path
 from typing import Callable, Optional
 
+from core.ffmpeg import find_ffmpeg
+
 try:
     import yt_dlp
 except ImportError:
@@ -57,7 +59,11 @@ class ProcessManager:
         returns:
             Caminho esperado do arquivo baixado.
         """
-        opts = self.get_dict_options(format_spec, output_template)
+        opts = self.get_dict_options(
+            format_spec,
+            output_template,
+            merge_output_format="mp4",
+        )
 
         if progress_hook is not None:
             opts["progress_hooks"] = [progress_hook]
@@ -116,15 +122,16 @@ class ProcessManager:
     def get_dict_options(
         self,
         format_spec: str,
-        output_template: str = "%(title)s.%(ext)s"
+        output_template: str = "%(title)s.%(ext)s",
+        merge_output_format: str | None = None,
     ) -> dict:
         """Monta o dicionário de opções enviado para `yt_dlp.YoutubeDL`.
 
         args:
             format_spec: Formato desejado para o download.
-            postprocessors: Pós-processadores usados depois do download, 
-            como conversão de áudio para MP3. Pode ser None quando não houver pós-processamento.
             output_template: Modelo de nome do arquivo de saída.
+            merge_output_format: Formato final usado quando o yt-dlp precisa
+            juntar vídeo e áudio separados. Para MP4, depende do ffmpeg.
 
         returns:
             Dicionário de opções compatível com `yt_dlp.YoutubeDL`.
@@ -136,4 +143,9 @@ class ProcessManager:
             "no_warnings": True,
             "noplaylist": True,
         }
+        ffmpeg_path = find_ffmpeg()
+        if ffmpeg_path is not None:
+            opts["ffmpeg_location"] = ffmpeg_path
+        if merge_output_format is not None:
+            opts["merge_output_format"] = merge_output_format
         return opts

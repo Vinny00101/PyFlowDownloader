@@ -8,9 +8,10 @@ from typing import Optional
 
 @dataclass
 class DownloadTask:
+    """Estado de uma tarefa de download exibida pela interface."""
+
     task_id: int
     url: str
-    destino: str = ""
     title: str = ""
     status: str = "pending"
     progress: float = 0.0
@@ -28,7 +29,7 @@ class DownloadTask:
 
 
 class ThreadManager:
-    """Gerencia downloads paralelos com ThreadPoolExecutor + yt-dlp."""
+    """Gerencia a fila de downloads executada em threads de background."""
 
     def __init__(self, max_workers: int = 3, output_dir: str = "downloads"):
         self.max_workers = max_workers
@@ -50,17 +51,29 @@ class ThreadManager:
     def submit(
         self,
         url: str,
-        destino: str = "",
         format_spec: str = "best",
         audio: bool = False,
     ) -> int:
+        """Cria uma tarefa e agenda o download no executor.
+
+        A UI chama este método quando o usuário confirma um novo download. A
+        tarefa é registrada em `_tasks` para que os widgets possam acompanhar
+        o estado, e o trabalho real é enviado para o `ThreadPoolExecutor`.
+
+        Args:
+            url: URL que será baixada.
+            format_spec: Expressão de formato aceita pelo yt-dlp.
+            audio: Define se o fluxo deve baixar somente áudio.
+
+        Returns:
+            ID interno da tarefa criada.
+        """
         with self._lock:
             task_id = self._next_id
             self._next_id += 1
             task = DownloadTask(
                 task_id=task_id,
                 url=url,
-                destino=destino or str(self._output_dir),
                 format_spec=format_spec,
                 audio=audio,
             )
@@ -68,10 +81,16 @@ class ThreadManager:
 
         future = self._executor.submit(self._run_download, task)
         self._futures[task_id] = future
-        future.add_done_callback(lambda f: self._on_done(task_id))
         return task_id
 
     def cancel(self, task_id: int) -> bool:
+        """Marca uma tarefa para cancelamento.
+
+        Se a tarefa ainda estiver aguardando no executor, `future.cancel()` pode
+        impedir que ela comece. Se ela já estiver rodando, o `stop_event` será
+        lido pelo hook de progresso e interromperá o fluxo na próxima atualização
+        enviada pelo yt-dlp.
+        """
         with self._lock:
             task = self._tasks.get(task_id)
             if not task:
@@ -85,14 +104,6 @@ class ThreadManager:
             return future.cancel()
         return True
 
-    def pause(self, task_id: int):
-        # Alerta de não uso
-        with self._lock:
-            task = self._tasks.get(task_id)
-            if task and task.status == "running":
-                task.stop_event.set()
-                task.status = "paused"
-
     def shutdown(self, wait: bool = True):
         self._executor.shutdown(wait=wait)
 
@@ -103,16 +114,13 @@ class ThreadManager:
         with self._lock:
             return list(self._tasks.values())
 
-    def active_count(self) -> int:
-        # Alerta de não uso
-        return sum(1 for t in self._tasks.values() if t.status == "running")
-
-    def queued_count(self) -> int:
-        # Alerta de não uso
-        return sum(1 for t in self._tasks.values() if t.status == "pending")
-
     def clear_terminal_tasks(self) -> None:
-        """Remove todas as tarefas com status terminal (completed, error, cancelled)."""
+        """Remove do histórico interno as tarefas que já terminaram.
+
+        O painel de histórico chama este método ao limpar o histórico. Arquivos
+        baixados não são apagados; apenas as referências em memória deixam de
+        aparecer na interface.
+        """
         with self._lock:
             to_remove = [
                 tid
@@ -124,7 +132,13 @@ class ThreadManager:
                 self._futures.pop(tid, None)
 
     def _run_download(self, task: DownloadTask):
-        pm = self._get_process_manager()
+        """Executa o download e atualiza o estado compartilhado da tarefa.
+
+        Este método roda fora da thread principal da interface. O yt-dlp chama
+        `progress_hook` várias vezes durante o download; cada chamada atualiza
+        progresso, velocidade, tamanho total e ETA. O `QueuePanel` lê esses
+        valores periodicamente via `list_tasks()`.
+        """
 
         def progress_hook(d):
             if task.stop_event.is_set():
@@ -142,8 +156,9 @@ class ThreadManager:
             elif d["status"] == "finished":
                 task.progress = 100.0
 
-        task.status = "running"
         try:
+            task.status = "running"
+            pm = self._get_process_manager()
             if task.audio:
                 result = pm.download_audio(
                     url=task.url,
@@ -168,22 +183,6 @@ class ThreadManager:
                 task.status = "error"
                 task.error_msg = str(e)
                 task.finished_at = datetime.now()
-
-    def _on_done(self, task_id: int):
-        task = self._tasks.get(task_id)
-        if not task:
-            return
-        if task.status in ("cancelled", "paused"):
-            return
-        future = self._futures.get(task_id)
-        if future is None:
-            return
-        try:
-            future.result()
-        except Exception as e:
-            if not task.stop_event.is_set():
-                task.status = "error"
-                task.error_msg = str(e)
 
 
 def _fmt_speed(bytes_per_sec) -> str:

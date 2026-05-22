@@ -7,8 +7,17 @@ PyFlowDownloader e um gerenciador de downloads desktop feito em Python. O sistem
 - Python 3.10 ou superior.
 - Windows, Linux ou macOS com ambiente grafico disponivel.
 - Conexao com a internet.
-- ffmpeg instalado e disponivel no PATH para downloads em MP3.
+- ffmpeg instalado para downloads em MP3 e videos em alta qualidade que precisam juntar video e audio.
 - Permissao de escrita na pasta de videos do usuario.
+
+## Requisitos Antes De Usar
+
+- Instale as dependencias Python com `pip install -r requirements.txt`.
+- Mantenha o `yt-dlp` atualizado para reduzir erros com YouTube: `pip install -U yt-dlp`.
+- Instale o `ffmpeg` quando for baixar MP3, `1080p`, `best` ou qualquer formato que use video e audio separados.
+- No Windows, o sistema procura o `ffmpeg` automaticamente em `C:/ffmpeg/bin/ffmpeg.exe`.
+- Se o `ffmpeg` estiver em outro lugar, adicione a pasta `bin` ao `PATH` ou configure uma das variaveis `FFMPEG_BINARY`, `FFMPEG_PATH` ou `FFMPEG_HOME`.
+- Para videos que pedem login ou bloqueiam bot, use cookies do navegador no `yt-dlp`; essa configuracao ainda nao esta exposta na interface.
 
 ## Requisitos Funcionais Atuais
 
@@ -38,6 +47,7 @@ PyFlowDownloader/
   core/
     __init__.py
     downloader.py
+    ffmpeg.py
     process_manager.py
     thread_manager.py
 
@@ -82,6 +92,7 @@ PyFlowDownloader/
 
 - `main.py`: ponto de entrada da aplicacao. Cria o `QApplication`, define a pasta de saida e abre a janela principal.
 - `core/`: camada de download e execucao em background.
+- `core/ffmpeg.py`: localiza o executavel do ffmpeg no PATH, em variaveis de ambiente ou em pastas comuns do Windows.
 - `core/process_manager.py`: encapsula o uso do `yt-dlp` para extrair informacoes, baixar video e baixar audio.
 - `core/thread_manager.py`: gerencia tarefas paralelas com `ThreadPoolExecutor`, estados de download e progresso.
 - `core/downloader.py`: modulo auxiliar legado para integrar `ThreadManager` e `ProcessManager`.
@@ -99,7 +110,7 @@ PyFlowDownloader/
 
 - `PySide6`: cria a interface grafica desktop. Usado em janelas, widgets, layouts, sinais, slots, timers, dialogs, tabelas e barras de progresso.
 - `yt-dlp`: baixa videos e audios. Usado em `core/process_manager.py` via `yt_dlp.YoutubeDL`.
-- `ffmpeg`: dependencia externa do sistema usada pelo `yt-dlp` para converter audio para MP3.
+- `ffmpeg`: dependencia externa do sistema usada pelo `yt-dlp` para converter audio para MP3 e juntar video/audio em downloads de alta qualidade.
 
 ### Bibliotecas Python Padrao
 
@@ -113,6 +124,7 @@ PyFlowDownloader/
 - `typing`: usado para `Protocol`, `Optional`, `Callable` e tipagens auxiliares.
 - `datetime`: registra horarios de conclusao, cancelamento e logs.
 - `csv`: exporta o historico para arquivo CSV.
+- `os`: le variaveis de ambiente usadas para localizar o `ffmpeg`.
 - `shutil`: verifica se `ffmpeg` esta disponivel no PATH.
 - `urllib.parse.urlparse`: valida e normaliza URLs digitadas pelo usuario.
 
@@ -137,6 +149,13 @@ PyFlowDownloader/
 9. O `QueuePanel` consulta as tarefas periodicamente com `QTimer` e atualiza os cards.
 10. Ao finalizar, cancelar ou falhar, a tarefa aparece no historico.
 
+## Qualidade De Video E ffmpeg
+
+- A opcao `best` usa `bestvideo+bestaudio/best` para tentar obter a melhor qualidade disponivel.
+- As opcoes `144p`, `360p`, `720p` e `1080p` usam filtros de altura do yt-dlp, como `bestvideo[height<=1080]+bestaudio`.
+- Quando o YouTube entrega video e audio separados, o `ffmpeg` e necessario para gerar um arquivo final unico.
+- Quando encontrado, o caminho do `ffmpeg` e enviado ao yt-dlp pela opcao `ffmpeg_location`.
+
 ## Como Executar
 
 ```bash
@@ -144,4 +163,4 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Para baixar MP3, instale o `ffmpeg` separadamente e confirme que ele esta acessivel no PATH.
+Para baixar MP3 ou videos em alta qualidade, instale o `ffmpeg`. O caminho recomendado no Windows e `C:/ffmpeg/bin/ffmpeg.exe`.
