@@ -6,6 +6,10 @@ O projeto segue versionamento semântico: `MAJOR.MINOR.PATCH`.
 
 ## [Unreleased]
 
+- Adicionando logo do PyFlowDownloader
+
+## [v0.1.0] 23/05/2026
+
 - Receber uma URL informada pelo usuario.
 - Validar e normalizar URLs digitadas sem protocolo.
 - Permitir escolha entre `mp4` e `mp3`.
