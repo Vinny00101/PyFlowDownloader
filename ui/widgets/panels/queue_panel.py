@@ -42,6 +42,7 @@ class QueuePanel(QWidget):
         super().__init__(parent)
         self._cards: dict[int, DownloadCard] = {}
         self._pending_removal: set[int] = set()
+        self._removed_terminal: set[int] = set()
         self._build_ui()
         self._setup_timer()
 
@@ -117,10 +118,17 @@ class QueuePanel(QWidget):
         Args:
             tasks: Lista atual de tarefas do manager.
         """
+        
         seen_ids: set[int] = set()
  
         for task in tasks:
             seen_ids.add(task.task_id)
+            if task.status not in _REMOVE_STATUSES:
+                self._removed_terminal.discard(task.task_id)
+            if task.task_id in self._removed_terminal:
+                continue
+            if task.task_id in self._pending_removal:
+                continue
             card = self._cards.get(task.task_id)
  
             if card is None:
@@ -129,6 +137,8 @@ class QueuePanel(QWidget):
             self._update_card(card, task)
             if task.status in _REMOVE_STATUSES:
                 self._schedule_removal(task.task_id)
+
+        self._removed_terminal.intersection_update(seen_ids)
  
         # Remove cards de tarefas que desapareceram completamente do manager
         ghost_ids = set(self._cards.keys()) - seen_ids - self._pending_removal
@@ -192,14 +202,20 @@ class QueuePanel(QWidget):
         if task_id in self._pending_removal:
             return
         self._pending_removal.add(task_id)
-        QTimer.singleShot(_REMOVE_DELAY_MS, lambda: self._remove_card_now(task_id))
+        QTimer.singleShot(
+            _REMOVE_DELAY_MS,
+            lambda: self._remove_card_now(task_id, mark_terminal=True),
+        )
 
-    def _remove_card_now(self, task_id: int) -> None:
+    def _remove_card_now(self, task_id: int, mark_terminal: bool = False) -> None:
         """Remove imediatamente o card do layout e libera sua memória.
  
         Args:
             task_id: ID da tarefa cujo card será destruído.
         """
+        if mark_terminal:
+            self._removed_terminal.add(task_id)
+
         card = self._cards.pop(task_id, None)
         self._pending_removal.discard(task_id)
  

@@ -29,6 +29,8 @@ class MainView:
 
     @classmethod
     def build(cls) -> "MainView":
+
+
         root = QWidget()
         layout = QVBoxLayout(root)
         layout.setSpacing(16)
@@ -43,9 +45,11 @@ class MainView:
         tabs = QTabWidget()
         queue_panel = QueuePanel()
         tabs.addTab(queue_panel, "Fila de Downloads")
-
         history_panel = HistoryPanel()
         tabs.addTab(history_panel, "Histórico")
+        teste = HistoryPanel()
+        tabs.addTab(teste, "Equipe desenvolvimento")
+
         history_tab_idx = tabs.count() - 1
         layout.addWidget(tabs, stretch=1)
 
@@ -59,7 +63,7 @@ class MainView:
         status_bar_label = QLabel("Pronto")
         status_bar_label.setObjectName("statusBar")
         layout.addWidget(status_bar_label)
-
+        
         return cls(
             root=root,
             input_bar=input_bar,
@@ -76,9 +80,8 @@ class MainView:
 def _build_header() -> tuple[QHBoxLayout, QPushButton]:
     header = QHBoxLayout()
     title_box = QVBoxLayout()
-
     title = QLabel("PyFlowDownloader")
-    title.setObjectName("titleLabel")
+    title.setObjectName("PyFlowDownloader")
     subtitle = QLabel("Downloads simultâneos · Fila · Histórico")
     subtitle.setObjectName("subtitleLabel")
 
@@ -86,10 +89,9 @@ def _build_header() -> tuple[QHBoxLayout, QPushButton]:
     title_box.addWidget(subtitle)
     header.addLayout(title_box)
     header.addStretch()
-
+    
     settings_btn = QPushButton("Configurações")
     settings_btn.setObjectName("secondaryBtn")
-    # Alerta de não uso: settings_btn ainda não possui fluxo de configuração.
+    
     header.addWidget(settings_btn)
-
     return header, settings_btn

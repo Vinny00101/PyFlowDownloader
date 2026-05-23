@@ -7,7 +7,7 @@
 DARK_COLORS = {
     # Backgrounds
     "bg_base":       "#1a1b26",
-    "bg_surface":    "#24283b",
+    "bg_surface":    "#20212d",
     "bg_elevated":   "#1f2335",
 
     # Borders
@@ -19,9 +19,9 @@ DARK_COLORS = {
     "text_subtle":   "#565f89",
 
     # Accent / Brand
-    "accent":        "#7aa2f7",
-    "accent_hover":  "#89b4fa",
-    "accent_press":  "#5a7fd4",
+    "accent":        "#5ccb5f",
+    "accent_hover":  "#009929",
+    "accent_press":  "#006414",
 
     # Semantic
     "success":       "#9ece6a",
@@ -55,9 +55,9 @@ LIGHT_COLORS = {
     "text_subtle":   "#94a3b8",
 
     # Accent / Brand
-    "accent":        "#3b82f6",
-    "accent_hover":  "#2563eb",
-    "accent_press":  "#1d4ed8",
+    "accent":        "#5ccb5f",
+    "accent_hover":  "#009929",
+    "accent_press":  "#006414",
 
     # Semantic
     "success":       "#22c55e",

@@ -17,6 +17,10 @@ class DownloadCard(QFrame):
     def __init__(self, task_id: int, title: str, parent: QWidget = None) -> None:
         super().__init__(parent)
         self.task_id = task_id
+        self._last_progress = -1
+        self._last_status = ""
+        self._last_speed = None
+        self._last_eta = None
 
         self.setFrameShape(QFrame.Shape.StyledPanel)
         self.setObjectName("downloadCard")
@@ -66,8 +70,26 @@ class DownloadCard(QFrame):
         root.addLayout(bottom_row)
 
     def update_progress(self, value: float, status: str, speed: str, eta: str) -> None:
-        self.progress_bar.setValue(int(value))
+        progress = max(0, min(100, int(value)))
+        if progress != self._last_progress:
+            self.progress_bar.setValue(progress)
+            self._last_progress = progress
 
+        if status != self._last_status:
+            self._apply_status(status)
+            self._last_status = status
+
+        speed_text = speed if status == "running" else ""
+        eta_text = eta if status == "running" and eta else ""
+
+        if speed_text != self._last_speed:
+            self.speed_label.setText(speed_text)
+            self._last_speed = speed_text
+        if eta_text != self._last_eta:
+            self.eta_label.setText(eta_text)
+            self._last_eta = eta_text
+
+    def _apply_status(self, status: str) -> None:
         status_map = {
             "pending": "Aguardando...",
             "running": "Baixando",
@@ -76,23 +98,16 @@ class DownloadCard(QFrame):
             "cancelled": "Cancelado",
             "paused": "Pausado",
         }
-        status_text = status_map.get(status, status)
-        self.status_label.setText(status_text)
+        self.status_label.setText(status_map.get(status, status))
 
         if status == "error":
-            self.status_label.setStyleSheet("color: #f7768e; font-size: 11px;")
+            self.status_label.setStyleSheet("color: #f7768e;")
         elif status == "completed":
-            self.status_label.setStyleSheet("color: #9ece6a; font-size: 11px;")
+            self.status_label.setStyleSheet("color: #9ece6a;")
             self.cancel_btn.setVisible(False)
         elif status == "cancelled":
-            self.status_label.setStyleSheet("color: #565f89; font-size: 11px;")
+            self.status_label.setStyleSheet("color: #565f89;")
             self.cancel_btn.setVisible(False)
         else:
-            self.status_label.setStyleSheet("color: #565f89; font-size: 11px;")
-
-        if status == "running":
-            self.speed_label.setText(speed)
-            self.eta_label.setText(eta if eta else "")
-        else:
-            self.speed_label.setText("")
-            self.eta_label.setText("")
+            self.status_label.setStyleSheet("color: #565f89;")
+            self.cancel_btn.setVisible(True)

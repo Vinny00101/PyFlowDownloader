@@ -156,12 +156,54 @@ QTextEdit#logPanel {{
     background-color: #1a1b26;
     color: #565f89;
     border: 1px solid #313244;
-    border-radius: 4px;
+    border-radius: 8px;
     font-family: 'Consolas', 'Courier New', monospace;
     font-size: 11px;
 }}
 QLabel#statusBar {{
     color: #565f89; font-size: 11px;
+}}
+
+QFrame#settingsHeader {{
+    background-color: {bg_elevated};
+    border: 1px solid {border};
+    border-radius: 10px;
+}}
+QTreeWidget#settingsSidebar {{
+    background-color: {bg_elevated};
+    border: 1px solid {border};
+    border-radius: 10px;
+    padding: 6px;
+    outline: none;
+}}
+QTreeWidget#settingsSidebar::item {{
+    padding: 4px 6px;
+    margin: 0;
+    outline: none;
+}}
+QTreeWidget#settingsSidebar::item:selected {{
+    background-color: {selection};
+    color: {text_primary};
+}}
+QFrame#settingsSection {{
+    background-color: transparent;
+    border-bottom: 1px solid {border};
+}}
+QLabel#settingsSectionTitle {{
+    background-color: transparent;
+    color: {text_primary};
+    font-weight: 700;
+}}
+QStackedWidget#settingsContent {{
+    background-color: {bg_surface};
+    border: 1px solid {border};
+    border-radius: 10px;
+}}
+QFrame#settingsPage {{
+    background-color: transparent;
+}}
+QFrame#settingsHeader QLabel, QFrame#settingsPage QLabel {{
+    background-color: transparent;
 }}
 """
 

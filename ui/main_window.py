@@ -2,7 +2,12 @@ from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QMainWindow
 
 from core.thread_manager import ThreadManager
-from ui.controllers import DownloadController, HistoryController, ShutdownController
+from ui.controllers import (
+    DownloadController,
+    HistoryController,
+    SettingsController,
+    ShutdownController,
+)
 from ui.layouts import MainView
 from ui.styles.themes import get_theme
 
@@ -31,7 +36,7 @@ class MainWindow(QMainWindow):
 
         self.view = MainView.build()
         self.setCentralWidget(self.view.root)
-
+        
         self._download_controller = DownloadController(
             manager=self._manager,
             logger=self.view.log_widget,
@@ -41,6 +46,10 @@ class MainWindow(QMainWindow):
             manager=self._manager,
             history_panel=self.view.history_panel,
         )
+        self._settings_controller = SettingsController(
+            parent_widget=self
+        )
+
         self._shutdown_controller = ShutdownController(
             manager=self._manager,
             queue_panel=self.view.queue_panel,
@@ -59,6 +68,9 @@ class MainWindow(QMainWindow):
         self.view.queue_panel.status_changed.connect(self._update_status_bar)
         self.view.history_panel.clear_requested.connect(
             self._history_controller.clear_history
+        )
+        self.view.settings_btn.clicked.connect(
+            self._settings_controller.open_settings
         )
         self.view.tabs.currentChanged.connect(self._on_tab_changed)
 
@@ -88,6 +100,7 @@ class MainWindow(QMainWindow):
             (self.view.queue_panel.cancel_requested, self._download_controller.confirm_cancel),
             (self.view.queue_panel.status_changed, self._update_status_bar),
             (self.view.history_panel.clear_requested, self._history_controller.clear_history),
+            (self.view.settings_btn.clicked, self._settings_controller.open_settings),
             (self.view.tabs.currentChanged, self._on_tab_changed),
         ):
             try:
