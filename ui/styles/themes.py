@@ -165,12 +165,10 @@ QLabel#statusBar {{
 }}
 
 QFrame#settingsHeader {{
-    background-color: {bg_elevated};
     border: 1px solid {border};
     border-radius: 10px;
 }}
 QTreeWidget#settingsSidebar {{
-    background-color: {bg_elevated};
     border: 1px solid {border};
     border-radius: 10px;
     padding: 6px;

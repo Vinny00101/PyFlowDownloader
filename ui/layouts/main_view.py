@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
 )
 
 from ui.widgets import InputBar, LogWidget
-from ui.widgets.panels import HistoryPanel, QueuePanel
+from ui.widgets.panels import HistoryPanel, QueuePanel, TeamDevPanel
 
 
 @dataclass(slots=True)
@@ -47,8 +47,8 @@ class MainView:
         tabs.addTab(queue_panel, "Fila de Downloads")
         history_panel = HistoryPanel()
         tabs.addTab(history_panel, "Histórico")
-        teste = HistoryPanel()
-        tabs.addTab(teste, "Equipe desenvolvimento")
+        team_dev = TeamDevPanel()
+        tabs.addTab(team_dev, "Equipe desenvolvimento")
 
         history_tab_idx = tabs.count() - 1
         layout.addWidget(tabs, stretch=1)
