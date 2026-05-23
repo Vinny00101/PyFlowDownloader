@@ -163,3 +163,85 @@ python main.py
 ```
 
 Para baixar MP3 ou videos em alta qualidade, instale o `ffmpeg`. O caminho recomendado no Windows e `C:/ffmpeg/bin/ffmpeg.exe`.
+
+## Build Local
+
+O projeto usa PyInstaller para gerar o executavel Windows.
+
+```powershell
+.\scripts\build.ps1
+```
+
+O pacote final sera criado em:
+
+```text
+releases/PyFlowDownloader-dev-windows.zip
+```
+
+Para informar uma versao manualmente:
+
+```powershell
+.\scripts\build.ps1 -Version "v0.1.0"
+```
+
+Se as dependencias ja estiverem instaladas:
+
+```powershell
+.\scripts\build.ps1 -Version "v0.1.0" -SkipInstall
+```
+
+## Pipeline De Release
+
+O projeto possui uma pipeline em `.github/workflows/release.yml`.
+
+Ela executa automaticamente quando uma tag no formato `vMAJOR.MINOR.PATCH` e enviada para o GitHub.
+
+Fluxo da pipeline:
+
+1. Baixa o codigo do repositorio.
+2. Instala Python 3.12.
+3. Instala as dependencias do `requirements.txt`.
+4. Executa o build com `scripts/build.ps1`.
+5. Compacta o executavel em `.zip`.
+6. Cria uma GitHub Release.
+7. Anexa o `.zip` da versao na Release.
+
+## Como Criar Uma Nova Versao
+
+O projeto segue essa estrutura de versão:
+
+```text
+vMAJOR.MINOR.PATCH
+```
+
+Exemplos:
+
+```text
+v0.1.0  primeira versao testavel
+v0.2.0  nova funcionalidade
+v0.2.1  correcao de bug
+v1.0.0  versao estavel
+```
+
+Para criar uma release:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Depois do push da tag, o GitHub Actions cria a Release automaticamente.
+
+Antes de criar a tag, atualize o `CHANGELOG.md` com as mudancas da versao.
+
+## Observacao Sobre ffmpeg Na Release
+
+O `ffmpeg` nao e empacotado junto com o aplicativo nesta primeira estrutura de release.
+
+Motivos:
+
+- Mantem o build menor.
+- Evita problemas de distribuicao/licenca.
+- O sistema ja detecta `ffmpeg` no `PATH`, em variaveis de ambiente e em `C:/ffmpeg/bin/ffmpeg.exe`.
+
+Para usar MP3 ou alta qualidade, instale o `ffmpeg` separadamente.
