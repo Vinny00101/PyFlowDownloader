@@ -1,4 +1,15 @@
-# PyFlowDownloader
+<p align="center">
+  <img src="assets/pyflow512.png" width="180" alt="PyFlowDownloader logo">
+</p>
+
+<h1 align="center">PyFlowDownloader</h1>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/PySide6-Qt-green?logo=qt&logoColor=white" alt="PySide6">
+  <img src="https://img.shields.io/badge/yt--dlp-media-red" alt="yt-dlp">
+  <img src="https://img.shields.io/badge/PyInstaller-build-purple" alt="PyInstaller">
+</p>
 
 PyFlowDownloader e um gerenciador de downloads desktop feito em Python. O sistema usa PySide6 para a interface grafica e yt-dlp para baixar videos ou audios, com suporte a fila de downloads, progresso em tempo real, cancelamento, historico e exportacao CSV.
 
