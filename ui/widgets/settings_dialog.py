@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
+    QComboBox,
     QDialog,
     QFrame,
     QLabel,
@@ -11,8 +12,11 @@ from PySide6.QtWidgets import (
     QTreeWidgetItem,
     QVBoxLayout,
     QHBoxLayout,
+    QPushButton,
     QWidget,
 )
+
+from ui.styles.theme_colors import THEMES
 
 SettingsSections = Sequence[tuple[str, Sequence[str]]]
 
@@ -135,13 +139,48 @@ class SettingsDialog(QDialog):
         page_subtitle.setObjectName("subtitleLabel")
         page_subtitle.setWordWrap(True)
 
-        layout.addWidget(page_title)
-        layout.addWidget(page_subtitle)
-        layout.addStretch()
+        if title == "Tema":
+            self._build_theme_page(layout)
+        else:
+            layout.addWidget(page_title)
+            layout.addWidget(page_subtitle)
+            layout.addStretch()
 
         index = self._pages.addWidget(page)
         item.setData(0, Qt.UserRole, index)
         return index
+
+    def _build_theme_page(self, layout: QVBoxLayout) -> None:
+        label = QLabel("Selecione o tema:")
+        label.setObjectName("cardTitle")
+        layout.addWidget(label)
+
+        #Isso cria um combo que mostra os temas disponíveis, como dark e light.
+        self._theme_combo = QComboBox()
+        self._theme_combo.addItems(list(THEMES.keys()))
+
+        #Aqui, o combo é setado para mostrar o tema atual, que é lido das configurações do app.
+        #Assim, quando o usuário abrir a página de tema, ele já verá qual tema está ativo no momento.
+        current_theme = "dark"
+        parent = self.parentWidget()
+        if parent is not None and hasattr(parent, "_settings"):
+            current_theme = parent._settings.get("theme", "dark")
+        self._theme_combo.setCurrentText(current_theme)#
+        layout.addWidget(self._theme_combo)
+
+        apply_btn = QPushButton("Aplicar tema")
+        apply_btn.setObjectName("secondaryBtn")
+        apply_btn.clicked.connect(self._on_apply_theme)#Quando o botão de aplicar tema é clicado, ele chama a função _on_apply_theme, que lê o tema selecionado no combo e chama
+        # a função apply_theme do widget pai (que é a MainWindow) para aplicar o tema ao app.
+        layout.addWidget(apply_btn)
+        layout.addStretch()
+
+    def _on_apply_theme(self) -> None:#Essa função é chamada quando o usuário clica no botão de aplicar tema. Ela lê o tema selecionado no combo box e chama a função
+        # apply_theme do widget pai (MainWindow) para aplicar o tema ao app.
+        theme_name = self._theme_combo.currentText()
+        parent = self.parentWidget()
+        if parent is not None and hasattr(parent, "apply_theme"):
+            parent.apply_theme(theme_name)
 
     def _on_sidebar_changed(
         self,

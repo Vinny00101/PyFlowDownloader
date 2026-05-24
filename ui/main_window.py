@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
     ) -> None:
         super().__init__()
         self._manager = manager
-        self._settings = settings
+        self._settings = settings or {"theme": "dark"}#Assim, mesmo que ninguém passe settings, o app sempre terá um tema padrão.
         self._settings_path = settings_path
         self._history = history
         self._signals = signals
@@ -55,8 +55,10 @@ class MainWindow(QMainWindow):
             queue_panel=self.view.queue_panel,
         )
 
-        colors = get_theme("dark")
-        self.setStyleSheet(colors)
+        #lê o tema e aplica o estilo ao app
+        theme_name = self._settings.get("theme", "dark") if self._settings else "dark"
+        colors = get_theme(theme_name)
+        self.setStyleSheet(colors)#
         self._connect_signals()
         self.view.queue_panel.start_polling(self._manager)
 
@@ -73,6 +75,13 @@ class MainWindow(QMainWindow):
             self._settings_controller.open_settings
         )
         self.view.tabs.currentChanged.connect(self._on_tab_changed)
+        
+        # lê o tema e aplica o estilo ao app
+    def apply_theme(self, theme_name: str) -> None:
+        if self._settings is not None:
+            self._settings["theme"] = theme_name
+        colors = get_theme(theme_name)
+        self.setStyleSheet(colors)
 
     @Slot(str, str, bool)
     def _on_download_requested(

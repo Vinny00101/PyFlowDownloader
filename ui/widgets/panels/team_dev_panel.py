@@ -13,7 +13,7 @@ TEAM_MEMBERS = [
     "Vinicius Andrade de Sousa",
     "Allyson Michel",
     "Kleber Moura",
-    "Rian",
+    "Rian de oliveira lopes",
 ]
 
 

@@ -31,7 +31,8 @@ def main():
 
     manager = ThreadManager(max_workers=3, output_dir=str(output_dir))
 
-    window = MainWindow(manager=manager)
+    settings = {"theme": "dark"}
+    window = MainWindow(manager=manager, settings=settings)
     window.setWindowIcon(QIcon(str(_asset_path("assets/pyflow256x256.ico"))))
     window.show()
 
