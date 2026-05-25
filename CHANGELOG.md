@@ -6,7 +6,16 @@ O projeto segue versionamento semântico: `MAJOR.MINOR.PATCH`.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-25
+
 - Adicionando logo do PyFlowDownloader
+- Adicionada a página de tema nas configurações.
+- Adicionada opção para visualizar a versão instalada do `yt-dlp`.
+- Adicionada opção para atualizar o `yt-dlp` pela interface.
+- Adicionada tradução amigável para erros comuns do `yt-dlp`.
+- Adicionado log de erro de download no painel de logs.
+- Ajustado `QueuePanel` para evitar repetir o mesmo erro várias vezes.
+- Melhorado o controller de configurações para executar ações de ferramentas.
 
 ## [v0.1.0] 23/05/2026
 

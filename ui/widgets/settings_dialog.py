@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QComboBox,
@@ -23,6 +23,8 @@ SettingsSections = Sequence[tuple[str, Sequence[str]]]
 
 class SettingsDialog(QDialog):
     """Janela modal de configurações com sidebar e páginas internas."""
+
+    update_ytdlp_requested = Signal()
 
     def __init__(
         self,
@@ -129,19 +131,23 @@ class SettingsDialog(QDialog):
         layout.setContentsMargins(22, 22, 22, 22)
         layout.setSpacing(10)
 
-        page_title = QLabel(title or section)
-        page_title.setObjectName("cardTitle")
-        page_subtitle = QLabel(
-            "Área reservada para configurar esta opção."
-            if title
-            else "Selecione uma opção no menu lateral para configurar."
-        )
-        page_subtitle.setObjectName("subtitleLabel")
-        page_subtitle.setWordWrap(True)
-
         if title == "Tema":
             self._build_theme_page(layout)
+        elif title == "Atualizar yt-dlp":
+            self._build_update_ytdlp_page(layout)
+        elif title and "yt-dlp" in title:
+            self._build_ytdlp_version_page(layout)
         else:
+            page_title = QLabel(title or section)
+            page_title.setObjectName("cardTitle")
+            page_subtitle = QLabel(
+                "Área reservada para configurar esta opção."
+                if title
+                else "Selecione uma opção no menu lateral para configurar."
+            )
+            page_subtitle.setObjectName("subtitleLabel")
+            page_subtitle.setWordWrap(True)
+
             layout.addWidget(page_title)
             layout.addWidget(page_subtitle)
             layout.addStretch()
@@ -155,28 +161,60 @@ class SettingsDialog(QDialog):
         label.setObjectName("cardTitle")
         layout.addWidget(label)
 
-        #Isso cria um combo que mostra os temas disponíveis, como dark e light.
         self._theme_combo = QComboBox()
         self._theme_combo.addItems(list(THEMES.keys()))
 
-        #Aqui, o combo é setado para mostrar o tema atual, que é lido das configurações do app.
-        #Assim, quando o usuário abrir a página de tema, ele já verá qual tema está ativo no momento.
         current_theme = "dark"
         parent = self.parentWidget()
         if parent is not None and hasattr(parent, "_settings"):
             current_theme = parent._settings.get("theme", "dark")
-        self._theme_combo.setCurrentText(current_theme)#
+        self._theme_combo.setCurrentText(current_theme)
         layout.addWidget(self._theme_combo)
 
         apply_btn = QPushButton("Aplicar tema")
         apply_btn.setObjectName("secondaryBtn")
-        apply_btn.clicked.connect(self._on_apply_theme)#Quando o botão de aplicar tema é clicado, ele chama a função _on_apply_theme, que lê o tema selecionado no combo e chama
-        # a função apply_theme do widget pai (que é a MainWindow) para aplicar o tema ao app.
+        apply_btn.clicked.connect(self._on_apply_theme)
         layout.addWidget(apply_btn)
         layout.addStretch()
 
-    def _on_apply_theme(self) -> None:#Essa função é chamada quando o usuário clica no botão de aplicar tema. Ela lê o tema selecionado no combo box e chama a função
-        # apply_theme do widget pai (MainWindow) para aplicar o tema ao app.
+    def _build_ytdlp_version_page(self, layout: QVBoxLayout) -> None:
+        title = QLabel("Versão do yt-dlp")
+        title.setObjectName("cardTitle")
+        layout.addWidget(title)
+
+        info = QLabel(f"Versão instalada: {self._get_ytdlp_version()}")
+        info.setObjectName("subtitleLabel")
+        layout.addWidget(info)
+        layout.addStretch()
+
+    def _build_update_ytdlp_page(self, layout: QVBoxLayout) -> None:
+        title = QLabel("Atualizar yt-dlp")
+        title.setObjectName("cardTitle")
+        layout.addWidget(title)
+
+        description = QLabel(
+            "Use esta opção quando o YouTube pedir login, cookies ou mostrar "
+            "erros de confirmação de acesso."
+        )
+        description.setObjectName("subtitleLabel")
+        description.setWordWrap(True)
+        layout.addWidget(description)
+
+        update_btn = QPushButton("Atualizar yt-dlp")
+        update_btn.setObjectName("secondaryBtn")
+        update_btn.clicked.connect(self.update_ytdlp_requested.emit)
+        layout.addWidget(update_btn)
+        layout.addStretch()
+
+    @staticmethod
+    def _get_ytdlp_version() -> str:
+        try:
+            from yt_dlp.version import __version__
+        except Exception:
+            return "não instalado"
+        return __version__
+
+    def _on_apply_theme(self) -> None:
         theme_name = self._theme_combo.currentText()
         parent = self.parentWidget()
         if parent is not None and hasattr(parent, "apply_theme"):
