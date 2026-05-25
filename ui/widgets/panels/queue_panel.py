@@ -35,6 +35,7 @@ class QueuePanel(QWidget):
 
     cancel_requested = Signal(int)
     status_changed = Signal(int, int, int)
+    error_reported = Signal(int, str)
 
     POLL_INTERVAL_MS: int = 300
 
@@ -43,6 +44,7 @@ class QueuePanel(QWidget):
         self._cards: dict[int, DownloadCard] = {}
         self._pending_removal: set[int] = set()
         self._removed_terminal: set[int] = set()
+        self._reported_errors: set[int] = set()
         self._build_ui()
         self._setup_timer()
 
@@ -135,6 +137,13 @@ class QueuePanel(QWidget):
                 card = self._create_card(task)
   
             self._update_card(card, task)
+            if (
+                task.status == "error"
+                and task.error_msg
+                and task.task_id not in self._reported_errors
+            ):
+                self._reported_errors.add(task.task_id)
+                self.error_reported.emit(task.task_id, task.error_msg)
             if task.status in _REMOVE_STATUSES:
                 self._schedule_removal(task.task_id)
 

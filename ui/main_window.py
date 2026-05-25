@@ -47,7 +47,8 @@ class MainWindow(QMainWindow):
             history_panel=self.view.history_panel,
         )
         self._settings_controller = SettingsController(
-            parent_widget=self
+            parent_widget=self,
+            logger=self.view.log_widget,
         )
 
         self._shutdown_controller = ShutdownController(
@@ -68,6 +69,7 @@ class MainWindow(QMainWindow):
             self._download_controller.confirm_cancel
         )
         self.view.queue_panel.status_changed.connect(self._update_status_bar)
+        self.view.queue_panel.error_reported.connect(self._log_download_error)
         self.view.history_panel.clear_requested.connect(
             self._history_controller.clear_history
         )
@@ -97,6 +99,10 @@ class MainWindow(QMainWindow):
         if index == self.view.history_tab_idx:
             self._history_controller.refresh()
 
+    @Slot(int, str)
+    def _log_download_error(self, task_id: int, message: str) -> None:
+        self.view.log_widget.log(f"Erro no download #{task_id}: {message}")
+
     @Slot(int, int, int)
     def _update_status_bar(self, total: int, active: int, queued: int) -> None:
         self.view.status_bar_label.setText(
@@ -108,6 +114,7 @@ class MainWindow(QMainWindow):
             (self.view.input_bar.download_requested, self._on_download_requested),
             (self.view.queue_panel.cancel_requested, self._download_controller.confirm_cancel),
             (self.view.queue_panel.status_changed, self._update_status_bar),
+            (self.view.queue_panel.error_reported, self._log_download_error),
             (self.view.history_panel.clear_requested, self._history_controller.clear_history),
             (self.view.settings_btn.clicked, self._settings_controller.open_settings),
             (self.view.tabs.currentChanged, self._on_tab_changed),

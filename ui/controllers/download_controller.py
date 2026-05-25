@@ -1,6 +1,7 @@
 from PySide6.QtCore import QObject, Slot
 from PySide6.QtWidgets import QMessageBox, QWidget
 
+from core.yt_dlp_errors import translate_yt_dlp_error
 from ui.protocols import DownloadManagerProtocol, LoggerProtocol
 
 
@@ -30,7 +31,7 @@ class DownloadController(QObject):
             QMessageBox.critical(self._parent_widget, "Erro", str(e))
             return
         except Exception as e:
-            self._logger.log(f"Erro ao adicionar download: {e}")
+            self._logger.log(f"Erro ao adicionar download: {translate_yt_dlp_error(e)}")
             return
 
         self._logger.log(f"Download adicionado: {url[:60]}")

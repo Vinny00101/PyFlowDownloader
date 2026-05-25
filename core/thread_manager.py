@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from core.yt_dlp_errors import translate_yt_dlp_error
+
 
 @dataclass
 class DownloadTask:
@@ -181,7 +183,7 @@ class ThreadManager:
         except Exception as e:
             if not task.stop_event.is_set():
                 task.status = "error"
-                task.error_msg = str(e)
+                task.error_msg = translate_yt_dlp_error(e)
                 task.finished_at = datetime.now()
 
 
