@@ -4,6 +4,7 @@ from pathlib import Path
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
+from core.settings_manager import SettingsManager
 from core.thread_manager import ThreadManager
 from ui.main_window import MainWindow
 
@@ -13,26 +14,17 @@ def _asset_path(relative_path: str) -> Path:
     return base_path / relative_path
 
 
-def _videos_dir() -> Path:
-    home = Path.home()
-    for name in ("Videos", "Vídeos", "My Videos", "Meus Vídeos"):
-        p = home / name
-        if p.exists():
-            return p
-    return home / "Videos"
-
 
 def main():
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon(str(_asset_path("assets/pyflow256x256.ico"))))
 
-    output_dir = _videos_dir() / "PyFlowDownloader"
-    output_dir.mkdir(exist_ok=True)
+    settings_manager = SettingsManager()
+    max_workers = settings_manager.get("downloads.concurrent_downloads", 3)
+    path = settings_manager.get("downloads.default_path")
+    manager = ThreadManager(max_workers=max_workers, output_dir=str(path))
 
-    manager = ThreadManager(max_workers=3, output_dir=str(output_dir))
-
-    settings = {"theme": "dark"}
-    window = MainWindow(manager=manager, settings=settings)
+    window = MainWindow(manager=manager, settings_manager=settings_manager)
     window.setWindowIcon(QIcon(str(_asset_path("assets/pyflow256x256.ico"))))
     window.show()
 

@@ -6,6 +6,13 @@ O projeto segue versionamento semântico: `MAJOR.MINOR.PATCH`.
 
 ## [Unreleased]
 
+- Armazenamento persistente de configurações via JSON na pasta APPDATA (core/settings_manager.py)
+- Configuração do caminho do FFmpeg e funcionalidade de teste
+- Verificação e atualização da versão do yt-dlp (somente em modo de desenvolvimento)
+- Configurações de download: caminho padrão, formato, qualidade e downloads simultâneos
+- Tradução centralizada de erros do yt-dlp em core/yt_dlp_errors.py para mensagens mais amigáveis ​​ao usuário
+- Tratamento de erros e feedback do usuário aprimorados durante todo o processo de download
+
 ## [0.2.0] - 2026-05-25
 
 - Adicionando logo do PyFlowDownloader

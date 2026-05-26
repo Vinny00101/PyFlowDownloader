@@ -1,3 +1,4 @@
+import os
 import threading
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, Future
@@ -49,6 +50,45 @@ class ThreadManager:
             from core.process_manager import ProcessManager
             self._process_manager = ProcessManager(output_dir=str(self._output_dir))
         return self._process_manager
+    
+    def set_max_workers(self, max_workers: int) -> str | None:
+        """Atualiza o número máximo de workers usados para downloads futuros.
+    
+        args:
+            max_workers: Número desejado de workers (mínimo 1)
+            
+        returns:
+            None se sucesso, mensagem de erro em português se falha
+        """
+        if max_workers < 1:
+            return "Numero de workers nao pode ser menor que 1"
+        try:
+            cpu_count = os.cpu_count()
+            # Se não conseguir detectar, usa valor seguro padrão
+            if cpu_count is None:
+                system_max = 4
+            else:
+                # Para tarefas I/O-bound (como downloads), limite razoável é 2x núcleos
+                # Mas limitado a 32 para evitar excesso de threads (pode causar thrashing)
+                system_max = min(cpu_count * 2, 32)
+        except NotImplementedError:
+            system_max = 4
+
+        if max_workers > system_max:
+            return f"Numero de workers nao pode exceder {system_max} (limite do sistema recomendado)"
+        
+        with self._lock:
+            self._executor.shutdown(wait=False)
+            self.max_workers = max_workers
+            self._executor = ThreadPoolExecutor(max_workers=max_workers)
+        return None
+
+    def set_output_dir(self, output_dir: str | Path) -> None:
+        """Atualiza a pasta de saída usada pelos próximos downloads."""
+        with self._lock:
+            self._output_dir = Path(output_dir)
+            self._output_dir.mkdir(parents=True, exist_ok=True)
+            self._process_manager = None
 
     def submit(
         self,

@@ -10,6 +10,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ui.utils.constant import FORMAT, QUALITY
+
 from core.ffmpeg import find_ffmpeg
 
 class InputBar(QWidget):
@@ -35,12 +37,12 @@ class InputBar(QWidget):
         layout.addWidget(self.url_input, stretch=1)
 
         self.format_combo = QComboBox()
-        self.format_combo.addItems(["mp4", "mp3"])
+        self.format_combo.addItems(FORMAT)
         self.format_combo.setFixedWidth(80)
         layout.addWidget(self.format_combo)
 
         self.quality_combo = QComboBox()
-        self.quality_combo.addItems(["144p", "360p", "720p", "1080p", "best"])
+        self.quality_combo.addItems(QUALITY)
         self.quality_combo.setFixedWidth(90)
         layout.addWidget(self.quality_combo)
 
@@ -49,6 +51,17 @@ class InputBar(QWidget):
 
         self.add_btn.clicked.connect(self._on_confirm)
         self.url_input.returnPressed.connect(self._on_confirm)
+
+    def apply_defaults(
+        self,
+        default_format: str | None = None,
+        default_quality: str | None = None,
+    ) -> None:
+        """Seleciona formato e qualidade padrão, se existirem nos combos."""
+        if default_format in FORMAT:
+            self.format_combo.setCurrentText(default_format)
+        if default_quality in QUALITY:
+            self.quality_combo.setCurrentText(default_quality)
 
     def _on_confirm(self) -> None:
         url = self.url_input.text().strip()
