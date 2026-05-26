@@ -1,5 +1,4 @@
 import sys
-from typing import Any
 
 from PySide6.QtCore import QObject, QProcess, Signal, Slot
 from PySide6.QtWidgets import QMessageBox, QWidget
@@ -7,6 +6,9 @@ from PySide6.QtWidgets import QMessageBox, QWidget
 from ui.protocols import LoggerProtocol
 from ui.widgets.settings_dialog import SettingsDialog
 from core.settings_manager import SettingsManager
+from ui.slots import SettingsDialogSlots
+from ui.utils.logging import log_if_available
+from ui.utils.signals import connect_many
 
 
 SETTINGS_SECTIONS = [
@@ -45,12 +47,22 @@ class SettingsController(QObject):
             sections=SETTINGS_SECTIONS,
             settings_manager=self._settings_manager,
         )
-        dialog.download_format_changed.connect(self.download_format_changed.emit)
-        dialog.download_quality_changed.connect(self.download_quality_changed.emit)
-        dialog.concurrent_downloads_changed.connect(self.concurrent_downloads_changed.emit)
-        dialog.download_path_changed.connect(self.download_path_changed.emit)
-        dialog.theme_changed.connect(self.theme_changed.emit)
-        dialog.update_ytdlp_requested.connect(self.update_ytdlp)
+        slots = SettingsDialogSlots(self._settings_manager, parent=dialog)
+        connect_many(
+            (
+                (dialog.download_format_changed, slots.slot_download_format_changed),
+                (dialog.download_quality_changed, slots.slot_download_quality_changed),
+                (dialog.concurrent_downloads_changed, slots.slot_concurrent_downloads_changed),
+                (dialog.download_path_changed, slots.slot_download_path_changed),
+                (dialog.theme_changed, slots.slot_theme_changed),
+                (slots.download_format_changed, self.download_format_changed.emit),
+                (slots.download_quality_changed, self.download_quality_changed.emit),
+                (slots.concurrent_downloads_changed, self.concurrent_downloads_changed.emit),
+                (slots.download_path_changed, self.download_path_changed.emit),
+                (slots.theme_changed, self.theme_changed.emit),
+                (dialog.update_ytdlp_requested, self.update_ytdlp),
+            )
+        )
         dialog.exec()
 
     @Slot()
@@ -76,10 +88,14 @@ class SettingsController(QObject):
         process = QProcess(self)
         process.setProgram(sys.executable)
         process.setArguments(["-m", "pip", "install", "--upgrade", "yt-dlp"])
-        process.readyReadStandardOutput.connect(self._log_update_stdout)
-        process.readyReadStandardError.connect(self._log_update_stderr)
-        process.finished.connect(self._on_update_finished)
-        process.errorOccurred.connect(self._on_update_error)
+        connect_many(
+            (
+                (process.readyReadStandardOutput, self._log_update_stdout),
+                (process.readyReadStandardError, self._log_update_stderr),
+                (process.finished, self._on_update_finished),
+                (process.errorOccurred, self._on_update_error),
+            )
+        )
         self._update_process = process
         process.start()
 
@@ -124,12 +140,4 @@ class SettingsController(QObject):
         self._log(f"Erro ao iniciar atualização do yt-dlp: {error}")
 
     def _log(self, message: str) -> None:
-        if self._logger is not None:
-            self._logger.log(message)
-
-    def get_settings(self, key_path: str, default: Any = None):
-        return self._settings_manager.get(key_path, default)
-
-    def set_settings(self, key_path: str, value: Any) -> None:
-        self._settings_manager.set(key_path, value)
-        self._settings_manager.save()
+        log_if_available(self._logger, message)
