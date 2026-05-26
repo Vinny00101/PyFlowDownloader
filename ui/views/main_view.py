@@ -15,7 +15,7 @@ from ui.widgets.panels import HistoryPanel, QueuePanel, TeamDevPanel
 
 @dataclass(slots=True)
 class MainView:
-    """Composicao visual da janela principal."""
+    """Composição visual da janela principal."""
 
     root: QWidget
     input_bar: InputBar
@@ -29,8 +29,6 @@ class MainView:
 
     @classmethod
     def build(cls) -> "MainView":
-
-
         root = QWidget()
         layout = QVBoxLayout(root)
         layout.setSpacing(16)
@@ -63,7 +61,7 @@ class MainView:
         status_bar_label = QLabel("Pronto")
         status_bar_label.setObjectName("statusBar")
         layout.addWidget(status_bar_label)
-        
+
         return cls(
             root=root,
             input_bar=input_bar,
@@ -89,9 +87,9 @@ def _build_header() -> tuple[QHBoxLayout, QPushButton]:
     title_box.addWidget(subtitle)
     header.addLayout(title_box)
     header.addStretch()
-    
+
     settings_btn = QPushButton("Configurações")
     settings_btn.setObjectName("secondaryBtn")
-    
+
     header.addWidget(settings_btn)
     return header, settings_btn

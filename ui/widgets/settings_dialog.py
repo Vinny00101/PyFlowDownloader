@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QPushButton,
     QSpinBox,
     QStackedWidget,
     QTreeWidget,
@@ -18,9 +17,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ui.utils.constant import FORMAT, QUALITY
 from core.settings_manager import SettingsManager
 from ui.styles.theme_colors import THEMES
+from ui.utils.constants import FORMAT, QUALITY
+from ui.utils.widgets import card_title, secondary_button, subtitle
 
 SettingsSections = Sequence[tuple[str, Sequence[str]]]
 
@@ -83,11 +83,9 @@ class SettingsDialog(QDialog):
 
         title = QLabel("Configurações")
         title.setObjectName("titleLabel")
-        subtitle = QLabel("Organize aqui as preferências da aplicação.")
-        subtitle.setObjectName("subtitleLabel")
 
         layout.addWidget(title)
-        layout.addWidget(subtitle)
+        layout.addWidget(subtitle("Organize aqui as preferências da aplicação."))
         return header
 
     def _build_sidebar(self) -> QTreeWidget:
@@ -149,7 +147,7 @@ class SettingsDialog(QDialog):
         elif title == "Formato padrão":
             self._build_default_format(layout)
         elif title == "Qualidade padrão":
-            self._build_default_Quality(layout)
+            self._build_default_quality(layout)
         elif title == "Downloads simultâneos":
             self._build_concurrent_downloads(layout)
         elif title == "Atualizar yt-dlp":
@@ -169,126 +167,94 @@ class SettingsDialog(QDialog):
         title: str,
         is_option: bool,
     ) -> None:
-        page_title = QLabel(title)
-        page_title.setObjectName("cardTitle")
-        page_subtitle = QLabel(
+        message = (
             "Área reservada para configurar esta opção."
             if is_option
             else "Selecione uma opção no menu lateral para configurar."
         )
-        page_subtitle.setObjectName("subtitleLabel")
-        page_subtitle.setWordWrap(True)
-
-        layout.addWidget(page_title)
-        layout.addWidget(page_subtitle)
+        layout.addWidget(card_title(title))
+        layout.addWidget(subtitle(message))
         layout.addStretch()
 
     def _build_theme_page(self, layout: QVBoxLayout) -> None:
-        label = QLabel("Selecione o tema:")
-        label.setObjectName("cardTitle")
-        layout.addWidget(label)
+        layout.addWidget(card_title("Selecione o tema:"))
 
         self._theme_combo = QComboBox()
         self._theme_combo.addItems(list(THEMES.keys()))
         self._theme_combo.setCurrentText(self._get_setting("appearance.theme", "dark"))
         layout.addWidget(self._theme_combo)
 
-        apply_btn = QPushButton("Aplicar tema")
-        apply_btn.setObjectName("secondaryBtn")
+        apply_btn = secondary_button("Aplicar tema")
         apply_btn.clicked.connect(self._on_apply_theme)
         layout.addWidget(apply_btn)
         layout.addStretch()
 
     def _build_download_path_page(self, layout: QVBoxLayout) -> None:
-        title = QLabel("Pasta padrão")
-        title.setObjectName("cardTitle")
-        layout.addWidget(title)
+        layout.addWidget(card_title("Pasta padrão"))
+        layout.addWidget(subtitle("Escolha onde os próximos vídeos serão salvos."))
 
-        description = QLabel("Escolha onde os próximos vídeos serão salvos.")
-        description.setObjectName("subtitleLabel")
-        description.setWordWrap(True)
-        layout.addWidget(description)
-
-        self._download_path_label = QLabel(self._get_setting("downloads.default_path", ""))
-        self._download_path_label.setObjectName("subtitleLabel")
-        self._download_path_label.setWordWrap(True)
+        self._download_path_label = subtitle(
+            self._get_setting("downloads.default_path", "")
+        )
         layout.addWidget(self._download_path_label)
 
-        choose_btn = QPushButton("Escolher pasta")
-        choose_btn.setObjectName("secondaryBtn")
+        choose_btn = secondary_button("Escolher pasta")
         choose_btn.clicked.connect(self._on_choose_download_path)
         layout.addWidget(choose_btn)
         layout.addStretch()
 
     def _build_ytdlp_version_page(self, layout: QVBoxLayout) -> None:
-        title = QLabel("Versão do yt-dlp")
-        title.setObjectName("cardTitle")
-        layout.addWidget(title)
-
-        info = QLabel(f"Versão instalada: {self._get_ytdlp_version()}")
-        info.setObjectName("subtitleLabel")
-        layout.addWidget(info)
+        layout.addWidget(card_title("Versão do yt-dlp"))
+        layout.addWidget(subtitle(f"Versão instalada: {self._get_ytdlp_version()}"))
         layout.addStretch()
 
     def _build_update_ytdlp_page(self, layout: QVBoxLayout) -> None:
-        title = QLabel("Atualizar yt-dlp")
-        title.setObjectName("cardTitle")
-        layout.addWidget(title)
-
-        description = QLabel(
-            "Use esta opção quando o YouTube pedir login, cookies ou mostrar "
-            "erros de confirmação de acesso."
+        layout.addWidget(card_title("Atualizar yt-dlp"))
+        layout.addWidget(
+            subtitle(
+                "Use esta opção quando o YouTube pedir login, cookies ou mostrar "
+                "erros de confirmação de acesso."
+            )
         )
-        description.setObjectName("subtitleLabel")
-        description.setWordWrap(True)
-        layout.addWidget(description)
 
-        update_btn = QPushButton("Atualizar yt-dlp")
-        update_btn.setObjectName("secondaryBtn")
+        update_btn = secondary_button("Atualizar yt-dlp")
         update_btn.clicked.connect(self.update_ytdlp_requested.emit)
         layout.addWidget(update_btn)
         layout.addStretch()
 
     def _build_default_format(self, layout: QVBoxLayout) -> None:
-        label = QLabel("Selecione o formato padrão:")
-        label.setObjectName("cardTitle")
-        layout.addWidget(label)
+        layout.addWidget(card_title("Selecione o formato padrão:"))
 
         self._format_combo = QComboBox()
         self._format_combo.addItems(FORMAT)
-        self._format_combo.setCurrentText(self._get_setting("downloads.default_format", "mp4"))
+        self._format_combo.setCurrentText(
+            self._get_setting("downloads.default_format", "mp4")
+        )
         layout.addWidget(self._format_combo)
 
-        apply_btn = QPushButton("Aplicar formato padrão")
-        apply_btn.setObjectName("secondaryBtn")
+        apply_btn = secondary_button("Aplicar formato padrão")
         apply_btn.clicked.connect(self._on_apply_format)
         layout.addWidget(apply_btn)
         layout.addStretch()
 
-    def _build_default_Quality(self, layout: QVBoxLayout) -> None:
-        label = QLabel("Selecione a qualidade de vídeo padrão:")
-        label.setObjectName("cardTitle")
-        layout.addWidget(label)
+    def _build_default_quality(self, layout: QVBoxLayout) -> None:
+        layout.addWidget(card_title("Selecione a qualidade de vídeo padrão:"))
 
         self._quality_combo = QComboBox()
         self._quality_combo.addItems(QUALITY)
-        self._quality_combo.setCurrentText(self._get_setting("downloads.default_quality", "720p"))
+        self._quality_combo.setCurrentText(
+            self._get_setting("downloads.default_quality", "720p")
+        )
         layout.addWidget(self._quality_combo)
 
-        apply_btn = QPushButton("Aplicar a qualidade de vídeo padrão")
-        apply_btn.setObjectName("secondaryBtn")
+        apply_btn = secondary_button("Aplicar a qualidade de vídeo padrão")
         apply_btn.clicked.connect(self._on_apply_quality)
         layout.addWidget(apply_btn)
         layout.addStretch()
-    def _build_concurrent_downloads(self, layout: QVBoxLayout) -> None:
-        label = QLabel("Downloads simultâneos:")
-        label.setObjectName("cardTitle")
-        layout.addWidget(label)
 
-        description = QLabel("Defina quantos downloads podem rodar ao mesmo tempo.")
-        description.setObjectName("subtitleLabel")
-        description.setWordWrap(True)
-        layout.addWidget(description)
+    def _build_concurrent_downloads(self, layout: QVBoxLayout) -> None:
+        layout.addWidget(card_title("Downloads simultâneos:"))
+        layout.addWidget(subtitle("Defina quantos downloads podem rodar ao mesmo tempo."))
 
         self._concurrent_downloads_spin = QSpinBox()
         self._concurrent_downloads_spin.setRange(1, 32)
@@ -297,8 +263,7 @@ class SettingsDialog(QDialog):
         )
         layout.addWidget(self._concurrent_downloads_spin)
 
-        apply_btn = QPushButton("Aplicar downloads simultâneos")
-        apply_btn.setObjectName("secondaryBtn")
+        apply_btn = secondary_button("Aplicar downloads simultâneos")
         apply_btn.clicked.connect(self._on_apply_concurrent_downloads)
         layout.addWidget(apply_btn)
         layout.addStretch()
@@ -316,32 +281,18 @@ class SettingsDialog(QDialog):
             return default
         return self._settings_manager.get(key_path, default)
 
-    def _set_setting(self, key_path: str, value) -> None:
-        if self._settings_manager is None:
-            return
-        self._settings_manager.set(key_path, value)
-        self._settings_manager.save()
-
     def _on_apply_format(self) -> None:
-        format = self._format_combo.currentText()
-        self._set_setting("downloads.default_format", format)
-        self.download_format_changed.emit(format)
+        self.download_format_changed.emit(self._format_combo.currentText())
 
     def _on_apply_theme(self) -> None:
-        theme_name = self._theme_combo.currentText()
-        self._set_setting("appearance.theme", theme_name)
-        self.theme_changed.emit(theme_name)
+        self.theme_changed.emit(self._theme_combo.currentText())
 
-    def _on_apply_quality(self):
-        quality = self._quality_combo.currentText()
-        self._set_setting("downloads.default_quality", quality)
-        self.download_quality_changed.emit(quality)
+    def _on_apply_quality(self) -> None:
+        self.download_quality_changed.emit(self._quality_combo.currentText())
 
     def _on_apply_concurrent_downloads(self) -> None:
-        max_workers = self._concurrent_downloads_spin.value()
-        self._set_setting("downloads.concurrent_downloads", max_workers)
-        self.concurrent_downloads_changed.emit(max_workers)
-        
+        self.concurrent_downloads_changed.emit(self._concurrent_downloads_spin.value())
+
     def _on_choose_download_path(self) -> None:
         current_path = self._get_setting("downloads.default_path", "")
         selected_path = QFileDialog.getExistingDirectory(
@@ -353,7 +304,6 @@ class SettingsDialog(QDialog):
         if not selected_path:
             return
 
-        self._set_setting("downloads.default_path", selected_path)
         self._download_path_label.setText(selected_path)
         self.download_path_changed.emit(selected_path)
 

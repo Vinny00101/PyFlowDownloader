@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ui.utils.constant import FORMAT, QUALITY
+from ui.utils.constants import FORMAT, QUALITY
 
 from core.ffmpeg import find_ffmpeg
 
