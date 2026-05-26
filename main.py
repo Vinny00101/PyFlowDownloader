@@ -14,7 +14,6 @@ def _asset_path(relative_path: str) -> Path:
     return base_path / relative_path
 
 
-
 def main():
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon(str(_asset_path("assets/pyflow256x256.ico"))))
