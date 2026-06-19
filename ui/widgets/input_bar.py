@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 
 from ui.utils.constants import FORMAT, QUALITY
 
-from core.ffmpeg import find_ffmpeg
+from core.ffmpeg_finder import find_ffmpeg
 
 class InputBar(QWidget):
     """Barra com campo de URL, seletores de formato/qualidade e botao Adicionar.
@@ -75,6 +75,20 @@ class InputBar(QWidget):
 
         fmt = self.format_combo.currentText()
         quality = self.quality_combo.currentText()
+
+        # Confirmação antes de iniciar o processo
+        reply = QMessageBox.question(
+            self,
+            "Confirmar Download",
+            f"Deseja adicionar este download à fila?\n\n"
+            f"URL: {url}\n"
+            f"Formato: {fmt}\n"
+            f"Qualidade: {quality}",
+            QMessageBox.Yes | QMessageBox.No,
+        )
+        if reply == QMessageBox.No:
+            return
+
         format_spec = self._build_format_spec(fmt, quality)
         is_audio = fmt == "mp3"
 

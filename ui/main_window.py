@@ -1,8 +1,16 @@
+import os
+import threading  # NOVO
+from pathlib import Path
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QMainWindow
+from PySide6.QtWidgets import QMainWindow, QMessageBox, QProgressDialog, QFileDialog # NOVO
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtWidgets import QMainWindow, QMessageBox, QProgressDialog, QFileDialog
+from PySide6.QtGui import QDesktopServices
 
 from core.settings_manager import SettingsManager
 from core.thread_manager import ThreadManager
+from core.ffmpeg_installer import FFmpegInstaller  # NOVO
+
 from ui.controllers import (
     DownloadController,
     HistoryController,
@@ -32,6 +40,12 @@ class MainWindow(QMainWindow):
 
         self.view = MainView.build()
         self.setCentralWidget(self.view.root)
+
+        # ---- NOVO: instalador do FFmpeg e diálogo de progresso ----
+        self.ffmpeg_installer = FFmpegInstaller(self._settings_manager)
+        self.ffmpeg_installer.finished.connect(self._on_ffmpeg_ready)
+        self.ffmpeg_dialog = None
+        # --------------------------------------------------------
 
         self._download_controller = DownloadController(
             manager=self._manager,
@@ -70,10 +84,96 @@ class MainWindow(QMainWindow):
         self._connect_signals()
         self.view.queue_panel.start_polling(self._manager)
 
+        # ---- NOVO: verifica FFmpeg ao final da inicialização ----
+        self._check_ffmpeg()
+
+    # NOVO: métodos adicionados
+    def _check_ffmpeg(self):
+        """Verifica a disponibilidade do FFmpeg e oferece instalação se necessário."""
+        if not self.ffmpeg_installer.is_available():
+            reply = QMessageBox.question(
+                self,
+                "Componente necessário",
+                "O FFmpeg não foi encontrado.\n"
+                "Ele é necessário para conversões de vídeo/áudio.\n\n"
+                "Deseja instalá-lo automaticamente?",
+                QMessageBox.Yes | QMessageBox.No,
+            )
+            if reply == QMessageBox.Yes:
+                self._start_ffmpeg_installation()
+
+    def _start_ffmpeg_installation(self):
+        """Abre uma diálogo de progresso e inicia o download em segundo plano."""
+        # Pergunta onde instalar
+        default_dir = str(Path.home() / "Documents" / "ffmpeg")
+        selected_dir = QFileDialog.getExistingDirectory(
+            self, "Selecione a pasta para instalar o FFmpeg", default_dir
+        )
+
+        if not selected_dir:
+            return # Usuário cancelou a seleção da pasta
+
+        target_path = Path(selected_dir)
+        self.ffmpeg_dialog = QProgressDialog(
+            "Instalando FFmpeg...", "Cancelar", 0, 100, self
+        )
+        self.ffmpeg_dialog.setWindowModality(Qt.WindowModal)
+        self.ffmpeg_dialog.setAutoClose(False)
+
+        self.ffmpeg_installer.progress.connect(self.ffmpeg_dialog.setValue)
+        self.ffmpeg_installer.status_message.connect(self.ffmpeg_dialog.setLabelText)
+
+        # O download é bloqueante, então usamos uma thread dedicada
+        threading.Thread(
+            target=self.ffmpeg_installer.install, 
+            args=(target_path,), 
+            daemon=True
+        ).start()
+
+    def _on_ffmpeg_ready(self, success, result):
+        """Chamado quando a instalação termina (sucesso ou falha)."""
+        if self.ffmpeg_dialog:
+            self.ffmpeg_dialog.close()
+            self.ffmpeg_dialog = None
+
+        if success:
+            # Comunica o caminho ao ProcessManager através do ThreadManager
+            self._manager._get_process_manager().set_ffmpeg_location(result)
+            QMessageBox.information(
+                self,
+                "Instalação Concluída",
+                "O FFmpeg foi instalado com sucesso!\n"
+                "Agora você já pode baixar vídeos em alta qualidade e converter para MP3."
+            )
+        else:
+            QMessageBox.critical(
+                self,
+                "Erro na instalação",
+                f"Não foi possível instalar o FFmpeg:\n{result}\n\n"
+                "Você pode instalá-lo manualmente e reiniciar o aplicativo.",
+            )
+
+    # ------------------------------------------------------------
+
+    def _on_open_folder_requested(self, task_id: int) -> None:
+        """Abre o explorador de arquivos na pasta do download concluído."""
+        task = self._manager.get_task(task_id)
+        if task and task.file_path:
+            file_path = Path(task.file_path).absolute()
+            folder_path = file_path.parent
+            
+            if folder_path.exists():
+                QDesktopServices.openUrl(QUrl.fromLocalFile(str(folder_path)))
+            else:
+                QMessageBox.warning(self, "Erro", "A pasta de destino não foi encontrada.")
+        else:
+            QMessageBox.warning(self, "Erro", "Caminho do arquivo não disponível.")
+
     def _signal_connections(self):
         return (
             (self.view.input_bar.download_requested, self._slots.slot_download_requested),
             (self.view.queue_panel.cancel_requested, self._download_controller.confirm_cancel),
+            (self.view.queue_panel.status_changed, self._on_task_status_changed),
             (self.view.queue_panel.status_changed, self._slots.slot_status_changed),
             (self.view.queue_panel.error_reported, self._slots.slot_download_error_reported),
             (self.view.history_panel.clear_requested, self._history_controller.clear_history),
@@ -85,6 +185,15 @@ class MainWindow(QMainWindow):
             (self._settings_controller.theme_changed, self._slots.slot_apply_theme),
             (self.view.tabs.currentChanged, self._slots.slot_tab_changed),
         )
+
+    def _on_task_status_changed(self, task_id: int, status: str) -> None:
+        """Intercepta mudanças de status para dar feedback adicional ao usuário."""
+        if status == "completed":
+            task = self._manager.get_task(task_id)
+            # Usa o título do vídeo ou o ID como fallback
+            name = task.title if task and task.title else f"Download #{task_id}"
+            self.view.log_widget.log(f"✅ Download concluído com sucesso: {name}")
+            # Opcional: Você poderia adicionar um som de notificação aqui
 
     def _connect_signals(self) -> None:
         connect_many(self._signal_connections())

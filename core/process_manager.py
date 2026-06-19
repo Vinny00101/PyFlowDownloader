@@ -8,7 +8,7 @@ O restante do sistema não precisa conhecer os detalhes de configuração do
 from pathlib import Path
 from typing import Callable, Optional
 
-from core.ffmpeg import find_ffmpeg
+from core.ffmpeg_finder import find_ffmpeg
 
 try:
     import yt_dlp
@@ -19,6 +19,8 @@ except ImportError:
         "  pip install yt-dlp\n\n"
         "Depois reinicie o aplicativo."
     )
+
+
 class ProcessManager:
     """Gerencia as operações de download feitas com `yt-dlp`.
 
@@ -40,6 +42,12 @@ class ProcessManager:
         """
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self._ffmpeg_location = None  # NOVO
+
+    # NOVO método
+    def set_ffmpeg_location(self, path: str):
+        """Define o caminho do FFmpeg que será usado nas chamadas ao yt-dlp."""
+        self._ffmpeg_location = path
 
     def download(
         self,
@@ -118,7 +126,6 @@ class ProcessManager:
             codec = postprocessors[0].get("preferredcodec", "mp3")
             return self.output_dir / f"{title}.{codec}"
 
-
     def get_dict_options(
         self,
         format_spec: str,
@@ -143,9 +150,11 @@ class ProcessManager:
             "no_warnings": True,
             "noplaylist": True,
         }
-        ffmpeg_path = find_ffmpeg()
-        if ffmpeg_path is not None:
-            opts["ffmpeg_location"] = ffmpeg_path
+
+        # MODIFICADO: usa o caminho definido, com fallback para o finder
+        ffmpeg = self._ffmpeg_location or find_ffmpeg()
+        if ffmpeg:
+            opts["ffmpeg_location"] = ffmpeg
         if merge_output_format is not None:
             opts["merge_output_format"] = merge_output_format
         return opts

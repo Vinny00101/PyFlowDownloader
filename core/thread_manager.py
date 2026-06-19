@@ -1,5 +1,6 @@
 import os
 import threading
+from enum import Enum
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, Future
 from dataclasses import dataclass, field
@@ -9,6 +10,17 @@ from typing import Optional
 from core.yt_dlp_errors import translate_yt_dlp_error
 
 
+class TaskStatus(str, Enum):
+    """Estados internos possíveis de uma tarefa de download."""
+
+    PENDING = "pending"
+    RUNNING = "running"
+    PAUSED = "paused"
+    ERROR = "error"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+
 @dataclass
 class DownloadTask:
     """Estado de uma tarefa de download exibida pela interface."""
@@ -16,7 +28,7 @@ class DownloadTask:
     task_id: int
     url: str
     title: str = ""
-    status: str = "pending"
+    status: str = TaskStatus.PENDING.value
     progress: float = 0.0
     speed: str = ""
     eta: str = ""
@@ -138,7 +150,7 @@ class ThreadManager:
             if not task:
                 return False
             task.stop_event.set()
-            task.status = "cancelled"
+            task.status = TaskStatus.CANCELLED.value
             task.finished_at = datetime.now()
 
         future = self._futures.get(task_id)
@@ -167,7 +179,11 @@ class ThreadManager:
             to_remove = [
                 tid
                 for tid, t in self._tasks.items()
-                if t.status in ("completed", "error", "cancelled")
+                if t.status in (
+                    TaskStatus.COMPLETED.value,
+                    TaskStatus.ERROR.value,
+                    TaskStatus.CANCELLED.value,
+                )
             ]
             for tid in to_remove:
                 del self._tasks[tid]
@@ -187,6 +203,10 @@ class ThreadManager:
                 raise Exception("Cancelado pelo usuário")
 
             if d["status"] == "downloading":
+                # Captura o título se ainda não tiver
+                if not task.title:
+                    task.title = d.get("info_dict", {}).get("title", "")
+                
                 total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
                 downloaded = d.get("downloaded_bytes", 0)
                 task.progress = (downloaded / total * 100) if total else 0
@@ -197,9 +217,11 @@ class ThreadManager:
 
             elif d["status"] == "finished":
                 task.progress = 100.0
+                task.speed = "Finalizando..."
+                task.eta = ""
 
         try:
-            task.status = "running"
+            task.status = TaskStatus.RUNNING.value
             pm = self._get_process_manager()
             if task.audio:
                 result = pm.download_audio(
@@ -217,12 +239,12 @@ class ThreadManager:
                 )
             task.file_path = result
             if not task.stop_event.is_set():
-                task.status = "completed"
+                task.status = TaskStatus.COMPLETED.value
                 task.progress = 100.0
                 task.finished_at = datetime.now()
         except Exception as e:
             if not task.stop_event.is_set():
-                task.status = "error"
+                task.status = TaskStatus.ERROR.value
                 task.error_msg = translate_yt_dlp_error(e)
                 task.finished_at = datetime.now()
 

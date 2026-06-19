@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -13,6 +14,8 @@ from PySide6.QtWidgets import (
 
 class DownloadCard(QFrame):
     """Card exibindo o progresso de um único download na fila."""
+
+    open_folder_requested = Signal(int)
 
     def __init__(self, task_id: int, title: str, parent: QWidget = None) -> None:
         super().__init__(parent)
@@ -34,6 +37,12 @@ class DownloadCard(QFrame):
         self.title_label.setObjectName("cardTitle")
         self.title_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         top_row.addWidget(self.title_label)
+
+        self.open_folder_btn = QPushButton("Abrir Pasta")
+        self.open_folder_btn.setFixedSize(90, 26)
+        self.open_folder_btn.setObjectName("secondaryBtn")
+        self.open_folder_btn.setVisible(False)
+        top_row.addWidget(self.open_folder_btn)
 
         self.cancel_btn = QPushButton("Cancelar")
         self.cancel_btn.setFixedSize(80, 26)
@@ -68,6 +77,8 @@ class DownloadCard(QFrame):
         bottom_row.addWidget(self.eta_label)
 
         root.addLayout(bottom_row)
+
+        self.open_folder_btn.clicked.connect(lambda: self.open_folder_requested.emit(self.task_id))
 
     def update_progress(self, value: float, status: str, speed: str, eta: str) -> None:
         progress = max(0, min(100, int(value)))
@@ -105,9 +116,11 @@ class DownloadCard(QFrame):
         elif status == "completed":
             self.status_label.setStyleSheet("color: #9ece6a;")
             self.cancel_btn.setVisible(False)
+            self.open_folder_btn.setVisible(True)
         elif status == "cancelled":
             self.status_label.setStyleSheet("color: #565f89;")
             self.cancel_btn.setVisible(False)
+            self.open_folder_btn.setVisible(False)
         else:
             self.status_label.setStyleSheet("color: #565f89;")
             self.cancel_btn.setVisible(True)
