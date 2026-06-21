@@ -4,8 +4,25 @@ Todas as mudanças relevantes do PyFlowDownloader serão documentadas aqui.
 
 O projeto segue versionamento semântico: `MAJOR.MINOR.PATCH`.
 
-## [Unreleased]
+## [0.4.0] - 2026-06-21
 
+- Adicionado fluxo assistido para instalação do FFmpeg pelo próprio programa.
+- O aplicativo agora detecta se o FFmpeg está disponível por caminho salvo ou busca automática no sistema antes de iniciar o uso.
+- Quando o FFmpeg não é encontrado, a interface oferece instalação automática e permite escolher a pasta de destino.
+- Implementado download do FFmpeg em segundo plano com barra de progresso e mensagens de status durante download e extração.
+- Após a extração, o programa localiza o binário `ffmpeg.exe`, salva o caminho em `tools.ffmpeg_path` e reutiliza essa configuração nas próximas execuções.
+- O caminho instalado/configurado do FFmpeg agora é repassado ao `yt-dlp` via `ffmpeg_location`, permitindo downloads em alta qualidade, merge de vídeo/áudio e conversão para MP3 sem configuração manual.
+- Adicionada busca ampliada por FFmpeg em locais comuns, incluindo `PATH`, `C:/ffmpeg`, APPDATA do PyFlowDownloader, Downloads e Documents.
+- Adicionada centralização das informações do aplicativo em `core/app_info.py`, incluindo nome, versão, descrição e caminho do ícone.
+- Adicionada exibição da versão do programa no canto inferior direito da tela principal.
+- Atualizado o visual da aplicação com janela principal sem moldura nativa, titlebar customizada, botões SVG de minimizar, maximizar/restaurar e fechar.
+- Adicionadas bordas arredondadas e borda externa discreta na janela principal quando não está maximizada.
+- Refinados os temas claro e escuro com nova paleta de cores, menor contraste no tema claro e aparência escura mais moderna.
+- Melhorados botões, abas, campos, combos, tabelas, cards de download, painel de logs e mensagens do sistema para manter contraste correto nos dois temas.
+- Corrigidos problemas visuais de bordas em containers, tabela de histórico, header da tabela, combos e cantos da janela.
+- Refeito o sidebar de configurações com hierarquia visual mais limpa, grupos expansíveis e ícones SVG de chevron.
+- Ajustado o comportamento do sidebar de configurações para que `Aparência`, `Downloads` e `Ferramentas` sejam apenas grupos, enquanto as páginas ficam nos itens internos.
+- Adicionados ícones SVG para controles da janela e indicadores de navegação.
 
 ## [0.3.0] - 2026-05-26
 

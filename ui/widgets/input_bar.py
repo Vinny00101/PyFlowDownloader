@@ -38,15 +38,19 @@ class InputBar(QWidget):
 
         self.format_combo = QComboBox()
         self.format_combo.addItems(FORMAT)
-        self.format_combo.setFixedWidth(80)
+        self.format_combo.setFixedWidth(92)
+        self.format_combo.setMinimumHeight(40)
         layout.addWidget(self.format_combo)
 
         self.quality_combo = QComboBox()
         self.quality_combo.addItems(QUALITY)
-        self.quality_combo.setFixedWidth(90)
+        self.quality_combo.setFixedWidth(104)
+        self.quality_combo.setMinimumHeight(40)
         layout.addWidget(self.quality_combo)
 
         self.add_btn = QPushButton("Adicionar")
+        self.add_btn.setMinimumHeight(40)
+        self.add_btn.setMinimumWidth(116)
         layout.addWidget(self.add_btn)
 
         self.add_btn.clicked.connect(self._on_confirm)

@@ -1,15 +1,15 @@
 import os
-import threading  # NOVO
+import threading
 from pathlib import Path
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QMainWindow, QMessageBox, QProgressDialog, QFileDialog # NOVO
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import QRectF, Qt, QUrl
+from PySide6.QtWidgets import QMainWindow, QMessageBox, QProgressDialog, QFileDialog, QVBoxLayout, QWidget
+from PySide6.QtGui import QDesktopServices, QPainterPath, QRegion
 from PySide6.QtWidgets import QMainWindow, QMessageBox, QProgressDialog, QFileDialog
-from PySide6.QtGui import QDesktopServices
 
+from core.app_info import APP_NAME
 from core.settings_manager import SettingsManager
 from core.thread_manager import ThreadManager
-from core.ffmpeg_installer import FFmpegInstaller  # NOVO
+from core.ffmpeg_installer import FFmpegInstaller
 
 from ui.controllers import (
     DownloadController,
@@ -20,6 +20,7 @@ from ui.controllers import (
 from ui.slots import MainWindowSlots
 from ui.utils.signals import connect_many, disconnect_many
 from ui.views import MainView
+from ui.widgets.title_bar import TitleBar
 
 
 class MainWindow(QMainWindow):
@@ -34,18 +35,21 @@ class MainWindow(QMainWindow):
         self._manager = manager
         self._settings_manager = settings_manager or SettingsManager()
 
-        self.setWindowTitle("PyFlowDownloader")
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Window)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setWindowTitle(APP_NAME)
         self.setMinimumSize(960, 700)
         self.resize(1024, 750)
 
         self.view = MainView.build()
-        self.setCentralWidget(self.view.root)
+        self._title_bar = TitleBar(self)
+        self._shell = self._build_shell()
+        self.setCentralWidget(self._shell)
 
-        # ---- NOVO: instalador do FFmpeg e diálogo de progresso ----
+        # instalador do FFmpeg e diálogo de progresso ----
         self.ffmpeg_installer = FFmpegInstaller(self._settings_manager)
         self.ffmpeg_installer.finished.connect(self._on_ffmpeg_ready)
         self.ffmpeg_dialog = None
-        # --------------------------------------------------------
 
         self._download_controller = DownloadController(
             manager=self._manager,
@@ -84,10 +88,49 @@ class MainWindow(QMainWindow):
         self._connect_signals()
         self.view.queue_panel.start_polling(self._manager)
 
-        # ---- NOVO: verifica FFmpeg ao final da inicialização ----
         self._check_ffmpeg()
 
-    # NOVO: métodos adicionados
+    
+    def _build_shell(self) -> QWidget:
+        shell = QWidget()
+        shell.setObjectName("appShell")
+        shell.setProperty("windowState", "normal")
+        layout = QVBoxLayout(shell)
+        layout.setContentsMargins(1, 1, 1, 1)
+        layout.setSpacing(0)
+        layout.addWidget(self._title_bar)
+        layout.addWidget(self.view.root, stretch=1)
+        return shell
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        if not hasattr(self, "_shell"):
+            return
+
+        is_maximized = self.isMaximized() or self.isFullScreen()
+        self._shell.setProperty("windowState", "maximized" if is_maximized else "normal")
+        layout = self._shell.layout()
+        if layout is not None:
+            margin = 0 if is_maximized else 1
+            layout.setContentsMargins(margin, margin, margin, margin)
+        self._shell.style().unpolish(self._shell)
+        self._shell.style().polish(self._shell)
+        self._apply_window_shape()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._apply_window_shape()
+
+    def _apply_window_shape(self) -> None:
+        if self.isMaximized() or self.isFullScreen():
+            self.clearMask()
+            return
+
+        path = QPainterPath()
+        path.addRoundedRect(QRectF(self.rect()).adjusted(0, 0, -1, -1), 12, 12)
+        self.setMask(QRegion(path.toFillPolygon().toPolygon()))
+
+    # métodos adicionados
     def _check_ffmpeg(self):
         """Verifica a disponibilidade do FFmpeg e oferece instalação se necessário."""
         if not self.ffmpeg_installer.is_available():
@@ -192,7 +235,7 @@ class MainWindow(QMainWindow):
             task = self._manager.get_task(task_id)
             # Usa o título do vídeo ou o ID como fallback
             name = task.title if task and task.title else f"Download #{task_id}"
-            self.view.log_widget.log(f"✅ Download concluído com sucesso: {name}")
+            self.view.log_widget.log(f"Download concluído com sucesso: {name}")
             # Opcional: Você poderia adicionar um som de notificação aqui
 
     def _connect_signals(self) -> None:

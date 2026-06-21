@@ -56,7 +56,7 @@ class QueuePanel(QWidget):
         self._scroll = QScrollArea()
         self._scroll.setWidgetResizable(True)
         self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self._scroll.setFrameShape(QScrollArea.NoFrame)
+        self._scroll.setFrameShape(QScrollArea.Shape.NoFrame)
 
         self._container = QWidget()
         self._container.setSizePolicy(
@@ -65,7 +65,7 @@ class QueuePanel(QWidget):
 
         self._cards_layout = QVBoxLayout(self._container)
         self._cards_layout.setSpacing(8)
-        self._cards_layout.setContentsMargins(0, 4, 0, 4)
+        self._cards_layout.setContentsMargins(14, 10, 14, 10)
         self._cards_layout.setAlignment(Qt.AlignTop)
 
         self._empty_label = QLabel("Nenhum download na fila.\nCole uma URL acima para começar.")

@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
+    QFrame,
     QHeaderView,
     QLabel,
     QLineEdit,
@@ -55,9 +56,13 @@ class HistoryPanel(QWidget):
     def _build_ui(self) -> None:
         """Constrói o layout completo do painel."""
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
 
         # Barra de ações + filtro
         action_bar = QHBoxLayout()
+        action_bar.setContentsMargins(0, 0, 0, 0)
+        action_bar.setSpacing(8)
 
         self._search_input = QLineEdit()
         self._search_input.setPlaceholderText("Filtrar por título ou URL…")
@@ -80,7 +85,14 @@ class HistoryPanel(QWidget):
         layout.addWidget(self._count_label)
 
         # Tabela
+        table_frame = QFrame()
+        table_frame.setObjectName("tableFrame")
+        table_frame_layout = QVBoxLayout(table_frame)
+        table_frame_layout.setContentsMargins(1, 1, 1, 1)
+        table_frame_layout.setSpacing(0)
+
         self._table = QTableWidget()
+        self._table.setObjectName("historyTable")
         self._table.setColumnCount(len(_COLUMNS))
         self._table.setHorizontalHeaderLabels(_COLUMNS)
         self._table.setEditTriggers(QTableWidget.NoEditTriggers)
@@ -94,7 +106,8 @@ class HistoryPanel(QWidget):
         header.setSectionResizeMode(_COL["Título"], QHeaderView.Stretch)
         header.setSectionResizeMode(_COL["Arquivo"], QHeaderView.Stretch)
 
-        layout.addWidget(self._table, stretch=1)
+        table_frame_layout.addWidget(self._table)
+        layout.addWidget(table_frame, stretch=1)
 
     def _connect_signals(self) -> None:
         """Conecta sinais internos do painel."""

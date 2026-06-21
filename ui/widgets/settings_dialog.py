@@ -1,7 +1,9 @@
 from collections.abc import Sequence
+import sys
+from pathlib import Path
 
 from PySide6.QtCore import Qt, QSize, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -23,6 +25,11 @@ from ui.utils.constants import FORMAT, QUALITY
 from ui.utils.widgets import card_title, secondary_button, subtitle
 
 SettingsSections = Sequence[tuple[str, Sequence[str]]]
+
+
+def _asset_path(relative_path: str) -> str:
+    base_path = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2]))
+    return str(base_path / relative_path)
 
 
 class SettingsDialog(QDialog):
@@ -69,10 +76,13 @@ class SettingsDialog(QDialog):
 
         self._populate_pages()
         self._sidebar.currentItemChanged.connect(self._on_sidebar_changed)
+        self._sidebar.itemClicked.connect(self._on_sidebar_item_clicked)
+        self._sidebar.itemExpanded.connect(self._on_sidebar_item_expanded)
+        self._sidebar.itemCollapsed.connect(self._on_sidebar_item_collapsed)
 
         first = self._sidebar.topLevelItem(0)
-        if first is not None:
-            self._sidebar.setCurrentItem(first)
+        if first is not None and first.childCount() > 0:
+            self._sidebar.setCurrentItem(first.child(0))
 
     def _build_header(self) -> QFrame:
         header = QFrame()
@@ -92,16 +102,16 @@ class SettingsDialog(QDialog):
         sidebar = QTreeWidget()
         sidebar.setObjectName("settingsSidebar")
         sidebar.setHeaderHidden(True)
-        sidebar.setIndentation(12)
+        sidebar.setIndentation(0)
         sidebar.setFixedWidth(220)
         sidebar.setItemsExpandable(True)
         sidebar.setExpandsOnDoubleClick(False)
+        sidebar.setRootIsDecorated(False)
         return sidebar
 
     def _populate_pages(self) -> None:
         for section, links in self._sections:
             section_item = self._add_sidebar_item(section, is_section=True)
-            self._add_page(section_item, section, None)
             section_item.setExpanded(True)
             for link in links:
                 item = self._add_sidebar_item(link, parent=section_item)
@@ -113,18 +123,20 @@ class SettingsDialog(QDialog):
         is_section: bool = False,
         parent: QTreeWidgetItem | None = None,
     ) -> QTreeWidgetItem:
-        item = QTreeWidgetItem([title])
+        item = QTreeWidgetItem([title if is_section else f"    {title}"])
         item.setSizeHint(0, QSize(0, 34 if is_section else 28))
         if is_section:
             font = QFont()
             font.setBold(True)
             item.setFont(0, font)
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
         if parent is None:
             self._sidebar.addTopLevelItem(item)
         else:
             parent.addChild(item)
         if is_section:
-            self._sidebar.setItemWidget(item, 0, _SectionLabel(title))
+            item.setText(0, "")
+            self._sidebar.setItemWidget(item, 0, _SectionLabel(title, expanded=True))
         return item
 
     def _add_page(
@@ -314,15 +326,24 @@ class SettingsDialog(QDialog):
     ) -> None:
         if current is None:
             return
-        if current.parent() is not None:
-            parent = current.parent()
-            self._sidebar.blockSignals(True)
-            self._sidebar.setCurrentItem(parent)
-            self._sidebar.blockSignals(False)
-
         index = current.data(0, Qt.UserRole)
         if isinstance(index, int):
             self._pages.setCurrentIndex(index)
+
+    def _on_sidebar_item_clicked(self, item: QTreeWidgetItem) -> None:
+        if item.childCount() == 0:
+            return
+        item.setExpanded(not item.isExpanded())
+
+    def _on_sidebar_item_expanded(self, item: QTreeWidgetItem) -> None:
+        label = self._sidebar.itemWidget(item, 0)
+        if isinstance(label, _SectionLabel):
+            label.set_expanded(True)
+
+    def _on_sidebar_item_collapsed(self, item: QTreeWidgetItem) -> None:
+        label = self._sidebar.itemWidget(item, 0)
+        if isinstance(label, _SectionLabel):
+            label.set_expanded(False)
 
     def showEvent(self, event) -> None:
         super().showEvent(event)
@@ -344,12 +365,24 @@ class SettingsDialog(QDialog):
 
 
 class _SectionLabel(QFrame):
-    def __init__(self, text: str) -> None:
+    def __init__(self, text: str, expanded: bool = True) -> None:
         super().__init__()
         self.setObjectName("settingsSection")
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 0, 4, 0)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+
+        self._chevron = QLabel()
+        self._chevron.setObjectName("settingsChevron")
+        self._chevron.setFixedSize(12, 12)
+        layout.addWidget(self._chevron)
 
         label = QLabel(text)
         label.setObjectName("settingsSectionTitle")
         layout.addWidget(label)
+        layout.addStretch()
+        self.set_expanded(expanded)
+
+    def set_expanded(self, expanded: bool) -> None:
+        icon = "assets/chevron-down.svg" if expanded else "assets/chevron-right.svg"
+        self._chevron.setPixmap(QIcon(_asset_path(icon)).pixmap(12, 12))

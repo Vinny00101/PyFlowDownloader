@@ -6,70 +6,72 @@
 
 DARK_COLORS = {
     # Backgrounds
-    "bg_base":       "#1a1b26",
-    "bg_surface":    "#20212d",
-    "bg_elevated":   "#1f2335",
+    "bg_base":       "#050506",
+    "bg_surface":    "#0b0b0d",
+    "bg_elevated":   "#121216",
 
     # Borders
-    "border":        "#414868",
+    "border":        "#26262d",
+    "window_border": "#3f3f46",
 
     # Text
-    "text_primary":  "#c0caf5",
-    "text_muted":    "#a9b1d6",
-    "text_subtle":   "#565f89",
+    "text_primary":  "#f4f4f5",
+    "text_muted":    "#a1a1aa",
+    "text_subtle":   "#71717a",
 
     # Accent / Brand
-    "accent":        "#5ccb5f",
-    "accent_hover":  "#009929",
-    "accent_press":  "#006414",
+    "accent":        "#8bff9f",
+    "accent_hover":  "#63e87b",
+    "accent_press":  "#45c75e",
 
     # Semantic
-    "success":       "#9ece6a",
-    "danger":        "#f7768e",
-    "danger_hover":  "#ff9eaf",
+    "success":       "#74e291",
+    "danger":        "#fb7185",
+    "danger_hover":  "#f43f5e",
 
     # Secondary button
-    "secondary":     "#414868",
-    "secondary_hover": "#565f89",
+    "secondary":     "#17171c",
+    "secondary_hover": "#22222a",
 
     # Selection
-    "selection":     "#364a82",
+    "selection":     "#1f3b2a",
 
     # On-accent (text sobre fundo colorido)
-    "on_accent":     "#1a1b26",
-    "on_danger":     "#1a1b26",
+    "on_accent":     "#041007",
+    "on_danger":     "#ffffff",
 }
 
 LIGHT_COLORS = {
     # Backgrounds
-    "bg_base":       "#f5f7fb",
+    "bg_base":       "#f6f6f4",
     "bg_surface":    "#ffffff",
-    "bg_elevated":   "#f1f5f9",
+    "bg_elevated":   "#eeeeeb",
 
     # Borders
-    "border":        "#cbd5e1",
+    "border":        "#ddddda",
+    "window_border": "#c7c7c2",
 
     # Text
-    "text_primary":  "#1e293b",
-    "text_muted":    "#475569",
-    "text_subtle":   "#94a3b8",
+    "text_primary":  "#27272a",
+    "text_muted":    "#52525b",
+    "text_subtle":   "#85858f",
 
     # Accent / Brand
-    "accent":        "#5ccb5f",
-    "accent_hover":  "#009929",
-    "accent_press":  "#006414",
+    "accent":        "#2f9e44",
+    "accent_hover":  "#2b8a3e",
+    "accent_press":  "#237032",
 
     # Semantic
-    "success":       "#22c55e",
-    "danger":        "#ef4444",
-    "danger_hover":  "#dc2626",
+    "success":       "#2f9e44",
+    "danger":        "#dc5a65",
+    "danger_hover":  "#c73f4d",
 
     # Secondary button
-    "secondary":     "#e2e8f0",
-    "secondary_hover": "#cbd5e1",
+    "secondary":     "#f2f2ef",
+    "secondary_hover": "#e8e8e4",
 
     # Selection
-    "selection":     "#bfdbfe",
+    "selection":     "#dcefdc",
 
     # On-accent (texto sobre fundo colorido)
     "on_accent":     "#ffffff",

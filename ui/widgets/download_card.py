@@ -29,8 +29,8 @@ class DownloadCard(QFrame):
         self.setObjectName("downloadCard")
 
         root = QVBoxLayout(self)
-        root.setContentsMargins(12, 10, 12, 10)
-        root.setSpacing(6)
+        root.setContentsMargins(14, 12, 14, 12)
+        root.setSpacing(8)
 
         top_row = QHBoxLayout()
         self.title_label = QLabel(title or "Carregando título...")
@@ -45,7 +45,7 @@ class DownloadCard(QFrame):
         top_row.addWidget(self.open_folder_btn)
 
         self.cancel_btn = QPushButton("Cancelar")
-        self.cancel_btn.setFixedSize(80, 26)
+        self.cancel_btn.setFixedSize(80, 30)
         self.cancel_btn.setObjectName("dangerBtn")
         top_row.addWidget(self.cancel_btn)
         root.addLayout(top_row)
@@ -54,7 +54,7 @@ class DownloadCard(QFrame):
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(False)
-        self.progress_bar.setFixedHeight(8)
+        self.progress_bar.setFixedHeight(10)
         root.addWidget(self.progress_bar)
 
         bottom_row = QHBoxLayout()
@@ -124,3 +124,6 @@ class DownloadCard(QFrame):
         else:
             self.status_label.setStyleSheet("color: #565f89;")
             self.cancel_btn.setVisible(True)
+
+        self.status_label.style().unpolish(self.status_label)
+        self.status_label.style().polish(self.status_label)
