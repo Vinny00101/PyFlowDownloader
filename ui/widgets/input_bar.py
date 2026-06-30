@@ -18,11 +18,11 @@ class InputBar(QWidget):
     """Barra com campo de URL, seletores de formato/qualidade e botao Adicionar.
 
     Signals:
-        download_requested(url, format_spec, is_audio): Emitido quando o
+        download_requested(url, format_spec, is_audio, format, quality): Emitido quando o
             usuario confirma um novo download.
     """
 
-    download_requested = Signal(str, str, bool)  # url, format_spec, is_audio
+    download_requested = Signal(str, str, bool, str, str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -109,7 +109,7 @@ class InputBar(QWidget):
             return
 
         self.url_input.clear()
-        self.download_requested.emit(url, format_spec, is_audio)
+        self.download_requested.emit(url, format_spec, is_audio, fmt, quality)
 
     @staticmethod
     def _normalize_url(url: str) -> str | None:

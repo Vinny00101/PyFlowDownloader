@@ -10,6 +10,7 @@ from core.app_info import APP_NAME
 from core.settings_manager import SettingsManager
 from core.thread_manager import ThreadManager
 from core.ffmpeg_installer import FFmpegInstaller
+from services import DesktopApiService
 
 from ui.controllers import (
     DownloadController,
@@ -34,6 +35,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self._manager = manager
         self._settings_manager = settings_manager or SettingsManager()
+        self._api_service = DesktopApiService(fake_mode=True)
 
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Window)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -182,6 +184,11 @@ class MainWindow(QMainWindow):
         if success:
             # Comunica o caminho ao ProcessManager através do ThreadManager
             self._manager._get_process_manager().set_ffmpeg_location(result)
+            self._add_app_log(
+                "ffmpeg_install_completed",
+                status="completed",
+                message="FFmpeg instalado com sucesso",
+            )
             QMessageBox.information(
                 self,
                 "Instalação Concluída",
@@ -189,6 +196,12 @@ class MainWindow(QMainWindow):
                 "Agora você já pode baixar vídeos em alta qualidade e converter para MP3."
             )
         else:
+            self._add_app_log(
+                "ffmpeg_install_error",
+                status="error",
+                message="Erro ao instalar FFmpeg",
+                error_message=result,
+            )
             QMessageBox.critical(
                 self,
                 "Erro na instalação",
@@ -216,27 +229,115 @@ class MainWindow(QMainWindow):
         return (
             (self.view.input_bar.download_requested, self._slots.slot_download_requested),
             (self.view.queue_panel.cancel_requested, self._download_controller.confirm_cancel),
-            (self.view.queue_panel.status_changed, self._on_task_status_changed),
+            (self.view.queue_panel.task_status_changed, self._on_task_status_changed),
             (self.view.queue_panel.status_changed, self._slots.slot_status_changed),
             (self.view.queue_panel.error_reported, self._slots.slot_download_error_reported),
             (self.view.history_panel.clear_requested, self._history_controller.clear_history),
+            (self.view.logs_panel.clear_requested, self._clear_app_logs),
             (self.view.settings_btn.clicked, self._settings_controller.open_settings),
             (self._settings_controller.download_path_changed, self._slots.slot_download_path_changed),
             (self._settings_controller.download_format_changed, self._slots.slot_download_format_changed),
             (self._settings_controller.download_quality_changed, self._slots.slot_download_quality_changed),
             (self._settings_controller.concurrent_downloads_changed, self._slots.slot_concurrent_downloads_changed),
             (self._settings_controller.theme_changed, self._slots.slot_apply_theme),
+            (self._settings_controller.ytdlp_updated, self._on_ytdlp_updated),
             (self.view.tabs.currentChanged, self._slots.slot_tab_changed),
         )
 
     def _on_task_status_changed(self, task_id: int, status: str) -> None:
         """Intercepta mudanças de status para dar feedback adicional ao usuário."""
+        task = self._manager.get_task(task_id)
+        name = task.title if task and task.title else f"Download #{task_id}"
+
+        if task is not None and self._api_service.get_download_by_local_task(task_id) is None:
+            self._api_service.create_download(
+                local_task_id=task_id,
+                url=task.url,
+                title=task.title,
+                status=task.status,
+                download_format=task.download_format,
+                quality=task.quality,
+                format_spec=task.format_spec,
+                is_audio=task.audio,
+            )
+
+        if task is not None:
+            self._api_service.update_download_by_local_task(
+                task_id,
+                title=task.title,
+                status=task.status,
+                file_path=task.file_path,
+                error_message=task.error_msg,
+                total_bytes=task.total_bytes,
+                avg_speed_kbps=task.avg_speed_kbps,
+                progress=task.progress,
+                started_at=task.started_at,
+                finished_at=task.finished_at,
+                duration_seconds=task.duration_seconds,
+            )
+
+        if status == "running":
+            self._add_app_log(
+                "download_started",
+                status="running",
+                message=f"Download iniciado: {name}",
+                download_id=task_id,
+            )
         if status == "completed":
-            task = self._manager.get_task(task_id)
-            # Usa o título do vídeo ou o ID como fallback
-            name = task.title if task and task.title else f"Download #{task_id}"
             self.view.log_widget.log(f"Download concluído com sucesso: {name}")
-            # Opcional: Você poderia adicionar um som de notificação aqui
+            self._add_app_log(
+                "download_completed",
+                status="completed",
+                message=f"Download concluído: {name}",
+                download_id=task_id,
+            )
+        elif status == "cancelled":
+            self._add_app_log(
+                "download_cancelled",
+                status="cancelled",
+                message=f"Download cancelado: {name}",
+                download_id=task_id,
+            )
+        elif status == "error":
+            self._add_app_log(
+                "download_error",
+                status="error",
+                message=f"Erro no download: {name}",
+                download_id=task_id,
+                error_message=task.error_msg if task else "",
+            )
+
+    def _add_app_log(
+        self,
+        event_type: str,
+        *,
+        status: str = "",
+        message: str = "",
+        download_id: int | None = None,
+        error_message: str = "",
+    ) -> None:
+        self._api_service.create_log(
+            event_type,
+            status=status,
+            message=message,
+            download_id=download_id,
+            error_message=error_message,
+        )
+        self._refresh_app_logs()
+
+    def _refresh_app_logs(self) -> None:
+        self.view.logs_panel.refresh(self._api_service.list_logs())
+
+    def _clear_app_logs(self) -> None:
+        self._api_service.clear_logs()
+        self._refresh_app_logs()
+
+    def _on_ytdlp_updated(self) -> None:
+        self._add_app_log(
+            "ytdlp_updated",
+            status="completed",
+            message="yt-dlp atualizado com sucesso",
+        )
 
     def _connect_signals(self) -> None:
         connect_many(self._signal_connections())

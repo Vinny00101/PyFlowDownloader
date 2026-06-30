@@ -33,20 +33,30 @@ class MainWindowSlots(QObject):
     def slot_apply_theme(self, theme_name: str) -> None:
         self._main_window.setStyleSheet(get_theme(theme_name))
 
-    @Slot(str, str, bool)
+    @Slot(str, str, bool, str, str)
     def slot_download_requested(
         self,
         url: str,
         format_spec: str,
         is_audio: bool,
+        download_format: str,
+        quality: str,
     ) -> None:
-        self._download_controller.add_download(url, format_spec, is_audio)
+        self._download_controller.add_download(
+            url,
+            format_spec,
+            is_audio,
+            download_format,
+            quality,
+        )
         self._view.tabs.setCurrentIndex(0)
 
     @Slot(int)
     def slot_tab_changed(self, index: int) -> None:
         if index == self._view.history_tab_idx:
             self._history_controller.refresh()
+        elif index == self._view.logs_tab_idx and hasattr(self._main_window, "_refresh_app_logs"):
+            self._main_window._refresh_app_logs()
 
     @Slot(str)
     def slot_download_path_changed(self, path: str) -> None:

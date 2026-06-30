@@ -35,6 +35,7 @@ class QueuePanel(QWidget):
 
     cancel_requested = Signal(int)
     status_changed = Signal(int, int, int)
+    task_status_changed = Signal(int, str)
     error_reported = Signal(int, str)
 
     POLL_INTERVAL_MS: int = 300
@@ -45,6 +46,7 @@ class QueuePanel(QWidget):
         self._pending_removal: set[int] = set()
         self._removed_terminal: set[int] = set()
         self._reported_errors: set[int] = set()
+        self._last_status_by_task: dict[int, str] = {}
         self._build_ui()
         self._setup_timer()
 
@@ -137,6 +139,10 @@ class QueuePanel(QWidget):
                 card = self._create_card(task)
   
             self._update_card(card, task)
+            previous_status = self._last_status_by_task.get(task.task_id)
+            if previous_status != task.status:
+                self._last_status_by_task[task.task_id] = task.status
+                self.task_status_changed.emit(task.task_id, task.status)
             if (
                 task.status == "error"
                 and task.error_msg
@@ -153,6 +159,7 @@ class QueuePanel(QWidget):
         ghost_ids = set(self._cards.keys()) - seen_ids - self._pending_removal
         for tid in ghost_ids:
             self._remove_card_now(tid)
+            self._last_status_by_task.pop(tid, None)
  
         self._toggle_empty_label()
 
@@ -227,6 +234,7 @@ class QueuePanel(QWidget):
 
         card = self._cards.pop(task_id, None)
         self._pending_removal.discard(task_id)
+        self._last_status_by_task.pop(task_id, None)
  
         if card is None:
             return

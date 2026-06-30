@@ -27,6 +27,7 @@ class SettingsController(QObject):
     download_path_changed = Signal(str)
     concurrent_downloads_changed = Signal(int)
     theme_changed = Signal(str)
+    ytdlp_updated = Signal()
 
     def __init__(
         self,
@@ -121,6 +122,7 @@ class SettingsController(QObject):
         self._update_process = None
         if exit_code == 0:
             self._log("yt-dlp atualizado com sucesso. Reinicie o aplicativo se a versão não mudar imediatamente.")
+            self.ytdlp_updated.emit()
             QMessageBox.information(
                 self._parent_widget,
                 "yt-dlp atualizado",

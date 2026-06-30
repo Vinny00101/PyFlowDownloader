@@ -86,6 +86,80 @@ python main.py
 
 Para baixar MP3 ou videos em alta qualidade, instale o `ffmpeg`. O caminho recomendado no Windows e `C:/ffmpeg/bin/ffmpeg.exe`.
 
+## API Local Para O Trabalho De POO II
+
+O projeto possui uma base Flask para comunicar o aplicativo desktop com uma API e salvar logs em um banco PostgreSQL via Docker.
+
+### O Que Pode Ser Salvo
+
+- Inicio de download.
+- Download concluido.
+- Download cancelado.
+- Erro de download.
+- URL baixada.
+- Formato escolhido: `mp4` ou `mp3`.
+- Qualidade escolhida: `360p`, `720p`, `best`, etc.
+- Caminho final do arquivo.
+- Instalacao do FFmpeg.
+- Erro ao instalar FFmpeg.
+- Atualizacao do `yt-dlp`.
+
+Essas informacoes ficam na tabela `app_logs`.
+
+### Subir O Banco Com Docker
+
+```bash
+docker compose up -d
+```
+
+### Instalar Dependencias Da API
+
+```bash
+pip install -r requirements-api.txt
+```
+
+### Executar A API
+
+```bash
+python run_api.py
+```
+
+### Endpoints Iniciais
+
+```text
+GET  /api/health
+POST /api/logs
+GET  /api/logs
+```
+
+Tipos de log permitidos:
+
+```text
+download_started
+download_completed
+download_cancelled
+download_error
+ffmpeg_install_completed
+ffmpeg_install_error
+ytdlp_updated
+```
+
+Exemplo de log:
+
+```json
+{
+  "event_type": "download_completed",
+  "status": "completed",
+  "message": "Download concluido com sucesso",
+  "url": "https://youtube.com/...",
+  "download_format": "mp4",
+  "quality": "720p",
+  "file_path": "C:/Users/.../video.mp4",
+  "app_version": "0.4.0",
+  "error_message": null
+}
+```
+
 ## Build Local
 
 O projeto usa PyInstaller para gerar o executavel Windows.

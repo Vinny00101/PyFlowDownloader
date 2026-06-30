@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 
 from core.app_info import APP_DESCRIPTION, APP_NAME, APP_VERSION
 from ui.widgets import InputBar, LogWidget
-from ui.widgets.panels import HistoryPanel, QueuePanel, TeamDevPanel
+from ui.widgets.panels import HistoryPanel, LogsPanel, QueuePanel, TeamDevPanel
 
 @dataclass(slots=True)
 class MainView:
@@ -21,11 +21,13 @@ class MainView:
     input_bar: InputBar
     queue_panel: QueuePanel
     history_panel: HistoryPanel
+    logs_panel: LogsPanel
     log_widget: LogWidget
     tabs: QTabWidget
     status_bar_label: QLabel
     version_label: QLabel
     history_tab_idx: int
+    logs_tab_idx: int
     settings_btn: QPushButton
 
     @classmethod
@@ -47,10 +49,13 @@ class MainView:
         tabs.addTab(queue_panel, "Fila de Downloads")
         history_panel = HistoryPanel()
         tabs.addTab(history_panel, "Histórico")
+        history_tab_idx = tabs.count() - 1
+        logs_panel = LogsPanel()
+        tabs.addTab(logs_panel, "Logs")
+        logs_tab_idx = tabs.count() - 1
         team_dev = TeamDevPanel()
         tabs.addTab(team_dev, "Equipe desenvolvimento")
 
-        history_tab_idx = tabs.count() - 1
         layout.addWidget(tabs, stretch=1)
 
         log_label = QLabel("Logs")
@@ -78,11 +83,13 @@ class MainView:
             input_bar=input_bar,
             queue_panel=queue_panel,
             history_panel=history_panel,
+            logs_panel=logs_panel,
             log_widget=log_widget,
             tabs=tabs,
             status_bar_label=status_bar_label,
             version_label=version_label,
             history_tab_idx=history_tab_idx,
+            logs_tab_idx=logs_tab_idx,
             settings_btn=settings_btn,
         )
 

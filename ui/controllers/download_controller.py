@@ -19,14 +19,27 @@ class DownloadController(QObject):
         self._logger = logger
         self._parent_widget = parent_widget
 
-    @Slot(str, str, bool)
-    def add_download(self, url: str, format_spec: str, is_audio: bool) -> None:
+    @Slot(str, str, bool, str, str)
+    def add_download(
+        self,
+        url: str,
+        format_spec: str,
+        is_audio: bool,
+        download_format: str,
+        quality: str,
+    ) -> None:
         if not self._manager:
             self._logger.log("Erro: ThreadManager não configurado")
             return
 
         try:
-            self._manager.submit(url=url, format_spec=format_spec, audio=is_audio)
+            self._manager.submit(
+                url=url,
+                format_spec=format_spec,
+                audio=is_audio,
+                download_format=download_format,
+                quality=quality,
+            )
         except ImportError as e:
             QMessageBox.critical(self._parent_widget, "Erro", str(e))
             return

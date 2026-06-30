@@ -35,9 +35,14 @@ class DownloadTask:
     file_path: Optional[Path] = None
     error_msg: str = ""
     format_spec: str = "best"
+    download_format: str = ""
+    quality: str = ""
     output_template: str = "%(title)s.%(ext)s"
     audio: bool = False
+    created_at: datetime = field(default_factory=datetime.now)
+    started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
+    duration_seconds: float = 0.0
     total_bytes: int = 0
     avg_speed_kbps: float = 0.0
     stop_event: threading.Event = field(default_factory=threading.Event)
@@ -107,6 +112,8 @@ class ThreadManager:
         url: str,
         format_spec: str = "best",
         audio: bool = False,
+        download_format: str = "",
+        quality: str = "",
     ) -> int:
         """Cria uma tarefa e agenda o download no executor.
 
@@ -130,6 +137,8 @@ class ThreadManager:
                 url=url,
                 format_spec=format_spec,
                 audio=audio,
+                download_format=download_format,
+                quality=quality,
             )
             self._tasks[task_id] = task
 
@@ -152,6 +161,7 @@ class ThreadManager:
             task.stop_event.set()
             task.status = TaskStatus.CANCELLED.value
             task.finished_at = datetime.now()
+            _finalize_timing(task)
 
         future = self._futures.get(task_id)
         if future and not future.done():
@@ -222,6 +232,7 @@ class ThreadManager:
 
         try:
             task.status = TaskStatus.RUNNING.value
+            task.started_at = datetime.now()
             pm = self._get_process_manager()
             if task.audio:
                 result = pm.download_audio(
@@ -242,11 +253,13 @@ class ThreadManager:
                 task.status = TaskStatus.COMPLETED.value
                 task.progress = 100.0
                 task.finished_at = datetime.now()
+                _finalize_timing(task)
         except Exception as e:
             if not task.stop_event.is_set():
                 task.status = TaskStatus.ERROR.value
                 task.error_msg = translate_yt_dlp_error(e)
                 task.finished_at = datetime.now()
+                _finalize_timing(task)
 
 
 def _fmt_speed(bytes_per_sec) -> str:
@@ -258,6 +271,15 @@ def _fmt_speed(bytes_per_sec) -> str:
     if bps >= 1_000:
         return f"{bps / 1_000:.1f} KB/s"
     return f"{bps:.0f} B/s"
+
+
+def _finalize_timing(task: DownloadTask) -> None:
+    if task.started_at is None or task.finished_at is None:
+        return
+    duration = (task.finished_at - task.started_at).total_seconds()
+    task.duration_seconds = max(duration, 0.0)
+    if task.duration_seconds > 0 and task.total_bytes > 0:
+        task.avg_speed_kbps = (task.total_bytes / 1024) / task.duration_seconds
 
 
 def _fmt_eta(secs) -> str:

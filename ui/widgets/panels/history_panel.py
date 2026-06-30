@@ -21,7 +21,7 @@ from ui.protocols.tasks import HistoryTaskProtocol as HistoryTask
 
 
 # Colunas da tabela (índice → nome)
-_COLUMNS = ["Título", "Status", "Tamanho", "Velocidade média", "Data", "Arquivo"]
+_COLUMNS = ["Título", "Status", "Formato", "Qualidade", "Tamanho", "Data", "Arquivo"]
 _COL = {name: idx for idx, name in enumerate(_COLUMNS)}
 
 # Status visíveis no painel (apenas terminais)
@@ -161,12 +161,9 @@ class HistoryPanel(QWidget):
 
             title = task.title or _short_url(task.url)
             status_label = _STATUS_LABELS.get(task.status, task.status)
+            format_label = task.download_format or ("mp3" if getattr(task, "audio", False) else "mp4")
+            quality_label = task.quality or "—"
             size_str = _format_bytes(task.total_bytes)
-            speed_str = (
-                f"{task.avg_speed_kbps:.0f} KB/s"
-                if task.avg_speed_kbps > 0
-                else "—"
-            )
             date_str = (
                 task.finished_at.strftime("%d/%m/%Y %H:%M")
                 if task.finished_at
@@ -174,7 +171,7 @@ class HistoryPanel(QWidget):
             )
             file_str = str(task.file_path) if task.file_path else "—"
 
-            cells = [title, status_label, size_str, speed_str, date_str, file_str]
+            cells = [title, status_label, format_label, quality_label, size_str, date_str, file_str]
             for col, value in enumerate(cells):
                 item = QTableWidgetItem(value)
                 item.setTextAlignment(Qt.AlignVCenter | Qt.AlignLeft)
@@ -182,6 +179,10 @@ class HistoryPanel(QWidget):
                 # Tooltip de erro na coluna Status
                 if col == _COL["Status"] and task.status == "error" and task.error_msg:
                     item.setToolTip(task.error_msg)
+                if col == _COL["Título"]:
+                    item.setToolTip(task.url)
+                if col == _COL["Data"] and task.duration_seconds > 0:
+                    item.setToolTip(f"Duração: {_format_duration(task.duration_seconds)}")
 
                 self._table.setItem(row, col, item)
 
@@ -267,8 +268,11 @@ class HistoryPanel(QWidget):
             "Data de Inicio",
             "Titulo",
             "URL de Origem",
+            "Formato",
+            "Qualidade",
             "Tamanho (MB)",
             "Velocidade Media (KB/s)",
+            "Duracao (s)",
             "Caminho de Destino",
         ]
         with open(path, "w", newline="", encoding="utf-8-sig") as f:
@@ -283,6 +287,8 @@ class HistoryPanel(QWidget):
                     ),
                     "Titulo": task.title or _short_url(task.url),
                     "URL de Origem": task.url,
+                    "Formato": task.download_format or ("mp3" if getattr(task, "audio", False) else "mp4"),
+                    "Qualidade": task.quality or "",
                     "Tamanho (MB)": (
                         round(task.total_bytes / 1_048_576, 2)
                         if task.total_bytes > 0
@@ -293,6 +299,7 @@ class HistoryPanel(QWidget):
                         if task.avg_speed_kbps > 0
                         else ""
                     ),
+                    "Duracao (s)": round(task.duration_seconds, 1),
                     "Caminho de Destino": str(task.file_path or ""),
                 })
 
@@ -315,6 +322,17 @@ def _format_bytes(total: int) -> str:
     if total < 1_073_741_824:
         return f"{total / 1_048_576:.2f} MB"
     return f"{total / 1_073_741_824:.2f} GB"
+
+
+def _format_duration(seconds: float) -> str:
+    total = int(seconds)
+    minutes, secs = divmod(total, 60)
+    hours, minutes = divmod(minutes, 60)
+    if hours:
+        return f"{hours}h {minutes}min {secs}s"
+    if minutes:
+        return f"{minutes}min {secs}s"
+    return f"{secs}s"
 
 
 def _short_url(url: str, max_len: int = 60) -> str:

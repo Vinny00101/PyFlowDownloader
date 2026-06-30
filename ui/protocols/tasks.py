@@ -25,3 +25,6 @@ class HistoryTaskProtocol(QueueTaskProtocol, Protocol):
     finished_at: datetime | None
     total_bytes: int
     avg_speed_kbps: float
+    download_format: str
+    quality: str
+    duration_seconds: float
