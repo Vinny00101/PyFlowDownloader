@@ -35,7 +35,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self._manager = manager
         self._settings_manager = settings_manager or SettingsManager()
-        self._api_service = DesktopApiService(fake_mode=True)
+        self._api_service = DesktopApiService(fake_mode=False)
 
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Window)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -61,6 +61,7 @@ class MainWindow(QMainWindow):
         self._history_controller = HistoryController(
             manager=self._manager,
             history_panel=self.view.history_panel,
+            api_service=self._api_service,
         )
         self._settings_controller = SettingsController(
             parent_widget=self,
@@ -316,11 +317,17 @@ class MainWindow(QMainWindow):
         download_id: int | None = None,
         error_message: str = "",
     ) -> None:
+        remote_download_id = download_id
+        if download_id is not None:
+            record = self._api_service.get_download_by_local_task(download_id)
+            if record is not None:
+                remote_download_id = record.id
+
         self._api_service.create_log(
             event_type,
             status=status,
             message=message,
-            download_id=download_id,
+            download_id=remote_download_id,
             error_message=error_message,
         )
         self._refresh_app_logs()

@@ -1,9 +1,6 @@
 from datetime import datetime, timezone
 
-from flask_sqlalchemy import SQLAlchemy
-
-
-db = SQLAlchemy()
+from .database import db
 
 
 class AppLog(db.Model):
@@ -13,10 +10,7 @@ class AppLog(db.Model):
     event_type = db.Column(db.String(80), nullable=False, index=True)
     status = db.Column(db.String(40), nullable=True, index=True)
     message = db.Column(db.String(255), nullable=True)
-    url = db.Column(db.Text, nullable=True)
-    download_format = db.Column(db.String(20), nullable=True)
-    quality = db.Column(db.String(20), nullable=True)
-    file_path = db.Column(db.Text, nullable=True)
+    download_id = db.Column(db.Integer, db.ForeignKey("downloads.id"), nullable=True)
     error_message = db.Column(db.Text, nullable=True)
     app_version = db.Column(db.String(20), nullable=True)
     created_at = db.Column(
@@ -25,16 +19,15 @@ class AppLog(db.Model):
         default=lambda: datetime.now(timezone.utc),
     )
 
+    download = db.relationship("Download", back_populates="logs")
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,
             "event_type": self.event_type,
             "status": self.status,
             "message": self.message,
-            "url": self.url,
-            "download_format": self.download_format,
-            "quality": self.quality,
-            "file_path": self.file_path,
+            "download_id": self.download_id,
             "error_message": self.error_message,
             "app_version": self.app_version,
             "created_at": self.created_at.isoformat(),
